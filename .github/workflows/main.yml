@@ -34,6 +34,6 @@ jobs:
             make
         - name: tiny tests
           run: |
-            # python3 test/tiny_test/tiny_client_ci_test.py
+            python3 test/tiny_test/tiny_client_ci_test.py
             python3 test/tiny_test/tiny_service_ci_test.py
             

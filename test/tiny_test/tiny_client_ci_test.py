@@ -8,7 +8,7 @@ repo_dir = script_dir.parent.parent
 examples_build_dir = (repo_dir / "build" / "examples").absolute()
 print(examples_build_dir)
 
-py_dir = repo_dir / "examples" / "tiny_client"
+py_dir = (repo_dir / "examples" / "tiny_client").absolute()
 
 service = subprocess.Popen([sys.executable, py_dir / "tiny_client_service.py"], cwd=py_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 time.sleep(2)

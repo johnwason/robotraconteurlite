@@ -5,11 +5,11 @@ import time
 import signal
 
 script_dir = Path(__file__).parent
-repo_dir = script_dir.parent.parent
+repo_dir = script_dir.parent.parent.absolute()
 examples_build_dir = (repo_dir / "build" / "examples").absolute()
 print(examples_build_dir)
 
-py_dir = repo_dir / "examples" / "tiny_service"
+py_dir = (repo_dir / "examples" / "tiny_service").absolute()
 
 service = subprocess.Popen([examples_build_dir / "robotraconteurlite_tiny_service"], cwd=examples_build_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 time.sleep(2)

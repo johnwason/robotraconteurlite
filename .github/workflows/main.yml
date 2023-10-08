@@ -17,11 +17,12 @@ jobs:
         - name: robotraconteur ppa
           run: |
             sudo add-apt-repository ppa:robotraconteur/ppa -y
+        - name: apt update
+          run: |
             sudo apt-get update
         - name: apt
           run: |
-            sudo apt-get update
-            sudo apt-get install build-essential libuuid-dev libssl-dev libcmocka-dev python3-robotraconteur -y
+            sudo apt-get install build-essential uuid-dev libssl-dev libcmocka-dev python3-robotraconteur -y
         - name: cmake
           run: |
             mkdir -p build

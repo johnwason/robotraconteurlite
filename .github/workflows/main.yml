@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  release:
+    types:
+      - created
+
+  workflow_dispatch:
+
+jobs:
+    build-ubuntu:
+        runs-on: ubuntu-20.04
+        steps:
+        - uses: actions/checkout@v3
+        - name: robotraconteur ppa
+          run: |
+            sudo add-apt-repository ppa:robotraconteur/ppa -y
+            sudo apt-get update
+        - name: apt
+          run: |
+            sudo apt-get update
+            sudo apt-get install build-essential libuuid-dev libssl-dev libcmocka-dev python3-robotraconteur -y
+        - name: cmake
+          run: |
+            mkdir -p build
+            cd build
+            cmake ..
+        - name: make
+          run: |
+            cd build
+            make
+        - name: tiny tests
+          run: |
+            python3 test/tiny_test/tiny_client_ci_test.py
+            python3 test/tiny_test/tiny_server_ci_test.py
+            

@@ -1921,7 +1921,7 @@ robotraconteurlite_status robotraconteurlite_messageelement_reader_begin_read_ne
         return rv;
     }
 
-    if ((o + nested_element_size) > element_reader->buffer_count)
+    if ((element_reader->buffer_count - buffer_info.header_size) < nested_element_size)
     {
         return ROBOTRACONTEURLITE_ERROR_PROTOCOL;
     }

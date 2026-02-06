@@ -506,7 +506,7 @@ int main(int argc, char* argv[])
                 return -1;
             }
 
-            rv = robotraconteurlite_wait_next_wake(&clock, pollfds, num_pollfds, next_wake);
+            rv = robotraconteurlite_poll_next_wake(&clock, pollfds, num_pollfds, next_wake);
             if (RRLITE_FAILED(rv))
             {
                 if (signal_received)

@@ -20,7 +20,7 @@
 
 #define FAILED ROBOTRACONTEURLITE_FAILED
 
-robotraconteurlite_status robotraconteurlite_wait_next_wake(struct robotraconteurlite_clock* clock,
+robotraconteurlite_status robotraconteurlite_poll_next_wake(struct robotraconteurlite_clock* clock,
                                                             struct robotraconteurlite_pollfd* pollfds,
                                                             robotraconteurlite_size_t pollfd_count,
                                                             robotraconteurlite_timespec wake_time)

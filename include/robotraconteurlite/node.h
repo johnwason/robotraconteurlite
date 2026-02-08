@@ -44,8 +44,8 @@ enum robotraconteurlite_event_type
 struct robotraconteurlite_node
 {
     /* Connections linked list */
-    struct robotraconteurlite_connection* connections_head;
-    struct robotraconteurlite_connection* connections_tail;
+    struct robotraconteurlite_connection_object* connections_head;
+    struct robotraconteurlite_connection_object* connections_tail;
     struct robotraconteurlite_connection* connections_next;
 
     /* Node information */
@@ -146,7 +146,7 @@ struct robotraconteurlite_client_handshake_data
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_init(
     struct robotraconteurlite_node* node, struct robotraconteurlite_nodeid* nodeid,
-    struct robotraconteurlite_string* nodename, struct robotraconteurlite_connection* connections_head);
+    struct robotraconteurlite_string* nodename, struct robotraconteurlite_connection_object* connections_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_shutdown(struct robotraconteurlite_node* node);
 
@@ -154,7 +154,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_add_con
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_remove_connection(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection);
+    struct robotraconteurlite_node* node, struct robotraconteurlite_connection_object* connection);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_next_event(
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event, robotraconteurlite_timespec now);
@@ -235,11 +235,6 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_send_
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_next_wake(
     struct robotraconteurlite_node* node, robotraconteurlite_timespec now, robotraconteurlite_timespec* wake_time);
-
-/* Note: does not add connection fds */
-ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_poll_add_fd(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_pollfd* pollfds,
-    const robotraconteurlite_size_t* pollfd_count, robotraconteurlite_size_t max_pollfds);
 
 /*ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_process_request(struct
  * robotraconteurlite_node_send_messageentry_data* request_data, struct

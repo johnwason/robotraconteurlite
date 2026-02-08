@@ -34,12 +34,12 @@
 
 #ifdef _WIN32
 #ifdef _WIN64
-#define ROBOTRACONTEURLITE_SOCKET unsigned long long
+#define ROBOTRACONTEURLITE_SOCKET_HANDLE unsigned long long
 #else
-#define ROBOTRACONTEURLITE_SOCKET unsigned long
+#define ROBOTRACONTEURLITE_SOCKET_HANDLE unsigned long
 #endif
 #else
-#define ROBOTRACONTEURLITE_SOCKET int
+#define ROBOTRACONTEURLITE_SOCKET_HANDLE int
 #endif
 
 #ifndef ROBOTRACONTEURLITE_NO_STDINT

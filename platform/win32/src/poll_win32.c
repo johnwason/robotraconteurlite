@@ -17,11 +17,21 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-int robotraconteurlite_poll(struct robotraconteurlite_pollfd* fds, int nfds, int timeout)
+int robotraconteurlite_poll_impl(struct robotraconteurlite_pollfd* fds, int nfds, int timeout)
 {
     int ret = -1;
     int last_err;
     WSAPOLLFD* pfd = (WSAPOLLFD*)fds;
+
+    if (nfds == 0)
+    {
+        if (timeout > 0)
+        {
+            Sleep((DWORD)timeout);
+        }
+        return 0;
+    }
+
     ret = WSAPoll(pfd, (ULONG)nfds, timeout);
     if (ret < 0)
     {

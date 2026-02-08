@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
     /* Variable storage */
     struct robotraconteurlite_connection connections_storage[NUM_CONNECTIONS];
     robotraconteurlite_byte connection_buffers[NUM_CONNECTIONS * 2 * CONNECTION_BUFFER_SIZE];
-    struct robotraconteurlite_connection* connections_head = NULL;
+    struct robotraconteurlite_connection_object connections_head;
     struct robotraconteurlite_connection* connection = NULL;
     struct robotraconteurlite_node node;
     struct robotraconteurlite_nodeid node_id;
@@ -143,20 +143,16 @@ int main(int argc, char* argv[])
     robotraconteurlite_nodeid_newrandom(&node_id);
 
     /* Initialize connections and TCP transport */
-    connections_head = robotraconteurlite_connections_init_from_array(connections_storage, NUM_CONNECTIONS,
-                                                                      connection_buffers, CONNECTION_BUFFER_SIZE,
-                                                                      (robotraconteurlite_size_t)(NUM_CONNECTIONS * 2));
-    if (!connections_head)
-    {
-        printf("Could not initialize connections\n");
-        return -1;
-    }
+    robotraconteurlite_connection_list_head_construct(&connections_head);
+    robotraconteurlite_connections_construct_from_array(
+        connections_storage, NUM_CONNECTIONS, connection_buffers, CONNECTION_BUFFER_SIZE,
+        (robotraconteurlite_size_t)(NUM_CONNECTIONS * 2), &connections_head);
 
-    robotraconteurlite_connection_init_connections(connections_head);
+    robotraconteurlite_connection_init_connections(&connections_head);
 
     /* Initialize the node */
     robotraconteurlite_string_from_c_str("tiny_client", &nodename_str);
-    robotraconteurlite_node_init(&node, &node_id, &nodename_str, connections_head);
+    robotraconteurlite_node_init(&node, &node_id, &nodename_str, &connections_head);
 
     /* Connect to the service */
     (void)memset(&service_addr, 0, sizeof(service_addr));
@@ -179,7 +175,7 @@ int main(int argc, char* argv[])
     }
 
     (void)memset(&connect_data, 0, sizeof(connect_data));
-    connect_data.connections_head = connections_head;
+    connect_data.connections_head = &connections_head;
     connect_data.service_address = &service_addr;
 
     printf("Begin connecting to service\n");
@@ -315,7 +311,7 @@ int main(int argc, char* argv[])
         do
         {
             robotraconteurlite_clock_gettime(&rr_clock, &now);
-            rv = robotraconteurlite_tcp_connections_communicate(connections_head, now);
+            rv = robotraconteurlite_tcp_connections_communicate(&connections_head, now);
             if (RRLITE_FAILED(rv))
             {
                 printf("Could not communicate with connections\n");
@@ -327,7 +323,6 @@ int main(int argc, char* argv[])
 
                 /* One socket per connection plus acceptor and node. May vary, check documentation */
                 struct robotraconteurlite_pollfd pollfds[NUM_CONNECTIONS + 2];
-                robotraconteurlite_size_t num_pollfds = 0;
                 robotraconteurlite_timespec next_wake = 0;
                 rv = robotraconteurlite_node_next_wake(&node, now, &next_wake);
                 if (RRLITE_FAILED(rv))
@@ -338,28 +333,22 @@ int main(int argc, char* argv[])
 
                 if (next_wake > now)
                 {
-                    rv = robotraconteurlite_tcp_connections_poll_add_fds(connections_head, pollfds, &num_pollfds,
-                                                                         NUM_CONNECTIONS + 1);
+                    rv = robotraconteurlite_tcp_connections_prepare_wait(&connections_head);
                     if (RRLITE_FAILED(rv))
                     {
                         printf("Could not add connections to poll\n");
                         return -1;
                     }
-                    rv = robotraconteurlite_node_poll_add_fd(&node, pollfds, &num_pollfds, NUM_CONNECTIONS + 1);
-                    if (RRLITE_FAILED(rv))
-                    {
-                        printf("Could not add node to poll\n");
-                        return -1;
-                    }
 
-                    rv = robotraconteurlite_poll_next_wake(&rr_clock, pollfds, num_pollfds, next_wake);
+                    rv = robotraconteurlite_poll_connections_next_wake(&connections_head, &rr_clock, pollfds,
+                                                                       NUM_CONNECTIONS + 2, next_wake);
                     if (RRLITE_FAILED(rv))
                     {
                         printf("Could not wait for next wake\n");
                         return -1;
                     }
                     robotraconteurlite_clock_gettime(&rr_clock, &now);
-                    rv = robotraconteurlite_tcp_connections_communicate(connections_head, now);
+                    rv = robotraconteurlite_tcp_connections_communicate(&connections_head, now);
                     if (RRLITE_FAILED(rv))
                     {
                         printf("Could not communicate with connections\n");

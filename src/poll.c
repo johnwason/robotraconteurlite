@@ -16,14 +16,60 @@
 #include "robotraconteurlite/poll.h"
 #include "robotraconteurlite/err.h"
 #include "robotraconteurlite/util.h"
+#include "robotraconteurlite/connection.h"
 #include <limits.h>
 
-#define FAILED ROBOTRACONTEURLITE_FAILED
+#define FLAGS_CHECK_ALL ROBOTRACONTEURLITE_FLAGS_CHECK_ALL
+#define FLAGS_CHECK ROBOTRACONTEURLITE_FLAGS_CHECK
+#define FLAGS_SET ROBOTRACONTEURLITE_FLAGS_SET
+#define FLAGS_CLEAR ROBOTRACONTEURLITE_FLAGS_CLEAR
 
-robotraconteurlite_status robotraconteurlite_poll_next_wake(struct robotraconteurlite_clock* clock,
-                                                            struct robotraconteurlite_pollfd* pollfds,
-                                                            robotraconteurlite_size_t pollfd_count,
-                                                            robotraconteurlite_timespec wake_time)
+#define FAILED ROBOTRACONTEURLITE_FAILED
+#define RETRY ROBOTRACONTEURLITE_RETRY
+
+robotraconteurlite_status robotraconteurlite_poll_pollfds_add_socket(struct robotraconteurlite_connection_socket* sock,
+                                                                     struct robotraconteurlite_pollfd* pollfds,
+                                                                     robotraconteurlite_size_t* pollfd_count,
+                                                                     robotraconteurlite_size_t max_pollfds)
+{
+    if (!FLAGS_CHECK(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE) ||
+        FLAGS_CHECK(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_FAKE_SOCKET))
+    {
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    if (sock->sock == 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    return robotraconteurlite_poll_impl_add_fd(sock->sock, sock->flags, pollfds, pollfd_count, max_pollfds);
+}
+
+robotraconteurlite_status robotraconteurlite_poll_pollfds_add_sockets(struct robotraconteurlite_connection_socket* sock,
+                                                                      struct robotraconteurlite_pollfd* pollfds,
+                                                                      robotraconteurlite_size_t* pollfd_count,
+                                                                      robotraconteurlite_size_t max_pollfds)
+{
+    struct robotraconteurlite_connection_socket* s = sock;
+    robotraconteurlite_status rv = -1;
+    while (s != NULL)
+    {
+        rv = robotraconteurlite_poll_pollfds_add_socket(s, pollfds, pollfd_count, max_pollfds);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+        s = s->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_poll_pollfds_next_wake(struct robotraconteurlite_clock* clock,
+                                                                    struct robotraconteurlite_pollfd* pollfds,
+                                                                    robotraconteurlite_size_t pollfd_count,
+                                                                    robotraconteurlite_timespec wake_time)
 {
     robotraconteurlite_timespec now = 0;
     robotraconteurlite_status rv = -1;
@@ -52,11 +98,33 @@ robotraconteurlite_status robotraconteurlite_poll_next_wake(struct robotraconteu
         timeout = (int)timeout_i64;
     }
 
-    rv = robotraconteurlite_poll(pollfds, (int)pollfd_count, timeout);
+    rv = robotraconteurlite_poll_impl(pollfds, (int)pollfd_count, timeout);
     if (FAILED(rv))
     {
         return ROBOTRACONTEURLITE_ERROR_SYSTEM_ERROR;
     }
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_poll_connections_next_wake(
+    struct robotraconteurlite_connection_object* connections_head, struct robotraconteurlite_clock* clock,
+    struct robotraconteurlite_pollfd* pollfds_storage, robotraconteurlite_size_t pollfds_storage_count,
+    robotraconteurlite_timespec wake_time)
+{
+    struct robotraconteurlite_connection_object* c = connections_head;
+    robotraconteurlite_status rv = -1;
+    robotraconteurlite_size_t pollfd_count = 0;
+    while (c != NULL)
+    {
+        rv = robotraconteurlite_poll_pollfds_add_sockets(&c->sock, pollfds_storage, &pollfd_count,
+                                                         pollfds_storage_count);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+        c = c->next;
+    }
+
+    return robotraconteurlite_poll_pollfds_next_wake(clock, pollfds_storage, pollfd_count, wake_time);
 }

@@ -85,7 +85,7 @@ robotraconteurlite_status robotraconteurlite_tcp_acceptor_communicate(
     int errno_out = -1;
     robotraconteurlite_status rv = -1;
     struct robotraconteurlite_connection_socket sock;
-    memset(&sock, 0, sizeof(struct robotraconteurlite_connection_socket));
+    (void)memset(&sock, 0, sizeof(struct robotraconteurlite_connection_socket));
 
     c = robotraconteurlite_connection_find_idle(connection_head);
 

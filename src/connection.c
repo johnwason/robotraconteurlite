@@ -34,7 +34,7 @@ robotraconteurlite_status robotraconteurlite_connection_reset(struct robotracont
     connection->recv_message_len = 0;
     connection->send_buffer_pos = 0;
     connection->send_message_len = 0;
-    memset(&connection->head.sock.sock, 0, sizeof(struct robotraconteurlite_connection_socket));
+    (void)memset(&connection->head.sock.sock, 0, sizeof(struct robotraconteurlite_connection_socket));
     connection->local_endpoint = 0;
     connection->remote_endpoint = 0;
     if (robotraconteurlite_nodeid_reset(&connection->remote_nodeid) != 0)
@@ -276,7 +276,7 @@ struct robotraconteurlite_connection* robotraconteurlite_connection_find_idle(
 
 void robotraconteurlite_connection_list_head_construct(struct robotraconteurlite_connection_object* connections_head)
 {
-    memset(connections_head, 0, sizeof(struct robotraconteurlite_connection_object));
+    (void)memset(connections_head, 0, sizeof(struct robotraconteurlite_connection_object));
     connections_head->connection_object_type = ROBOTRACONTEURLITE_CONNECTION_OBJECT_TYPE_LIST_HEAD;
 }
 
@@ -311,7 +311,7 @@ void robotraconteurlite_connection_list_remove(struct robotraconteurlite_connect
 void robotraconteurlite_connection_construct(struct robotraconteurlite_connection* connection,
                                              struct robotraconteurlite_connection_object* connections_head)
 {
-    memset(connection, 0, sizeof(struct robotraconteurlite_connection));
+    (void)memset(connection, 0, sizeof(struct robotraconteurlite_connection));
     connection->head.connection_object_type = ROBOTRACONTEURLITE_CONNECTION_OBJECT_TYPE_CONNECTION;
     connection->heartbeat_period_ms = 5000;
     connection->heartbeat_timeout_ms = 15000;
@@ -588,7 +588,10 @@ robotraconteurlite_status robotraconteurlite_connection_impl_accept2(struct robo
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-void robotraconteurlite_connection_init_connection_acceptor(struct robotraconteurlite_connection_acceptor* acceptor) {}
+void robotraconteurlite_connection_init_connection_acceptor(struct robotraconteurlite_connection_acceptor* acceptor)
+{
+    ROBOTRACONTEURLITE_UNUSED(acceptor);
+}
 
 struct robotraconteurlite_connection* robotraconteurlite_connection_cast(
     struct robotraconteurlite_connection_object* connection_obj)
@@ -603,6 +606,7 @@ struct robotraconteurlite_connection* robotraconteurlite_connection_cast(
         return NULL;
     }
 
+    /* cppcheck-suppress misra-c2012-11.3 */
     return (struct robotraconteurlite_connection*)connection_obj;
 }
 
@@ -629,7 +633,7 @@ struct robotraconteurlite_connection* robotraconteurlite_connection_first_2(
     while (c1 != NULL)
     {
         struct robotraconteurlite_connection* c2 = robotraconteurlite_connection_cast(c1);
-        if (c2 != NULL && c2->head.transport_type == transport_type)
+        if ((c2 != NULL) && (c2->head.transport_type == transport_type))
         {
             return c2;
         }
@@ -642,7 +646,7 @@ struct robotraconteurlite_connection* robotraconteurlite_connection_next(
     struct robotraconteurlite_connection_object* connection_obj)
 {
     struct robotraconteurlite_connection_object* c1 = NULL;
-    if (connection_obj == NULL || connection_obj->next == NULL)
+    if ((connection_obj == NULL) || (connection_obj->next == NULL))
     {
         return NULL;
     }
@@ -663,7 +667,7 @@ struct robotraconteurlite_connection* robotraconteurlite_connection_next_2(
     struct robotraconteurlite_connection_object* connection_obj, robotraconteurlite_u32 transport_type)
 {
     struct robotraconteurlite_connection_object* c1 = NULL;
-    if (connection_obj == NULL || connection_obj->next == NULL)
+    if ((connection_obj == NULL) || (connection_obj->next == NULL))
     {
         return NULL;
     }
@@ -671,7 +675,7 @@ struct robotraconteurlite_connection* robotraconteurlite_connection_next_2(
     while (c1 != NULL)
     {
         struct robotraconteurlite_connection* c2 = robotraconteurlite_connection_cast(c1);
-        if (c2 != NULL && c2->head.transport_type == transport_type)
+        if ((c2 != NULL) && (c2->head.transport_type == transport_type))
         {
             return c2;
         }
@@ -693,6 +697,7 @@ struct robotraconteurlite_connection_acceptor* robotraconteurlite_connection_acc
         return NULL;
     }
 
+    /* cppcheck-suppress misra-c2012-11.3 */
     return (struct robotraconteurlite_connection_acceptor*)connection_obj;
 }
 
@@ -701,7 +706,7 @@ robotraconteurlite_status robotraconteurlite_connection_impl_prepare_wait(
 {
 
     if ((!FLAGS_CHECK(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE)) ||
-        (connection->head.sock.sock == 0))
+        (connection->head.sock.sock == (ROBOTRACONTEURLITE_SOCKET_HANDLE)0))
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }

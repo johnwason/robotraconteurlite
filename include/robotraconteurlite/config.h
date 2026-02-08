@@ -47,17 +47,29 @@
 #include <stddef.h>
 #include <limits.h>
 #include <float.h>
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int8_t robotraconteurlite_i8;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint8_t robotraconteurlite_u8;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int16_t robotraconteurlite_i16;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint16_t robotraconteurlite_u16;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int32_t robotraconteurlite_i32;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint32_t robotraconteurlite_u32;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int64_t robotraconteurlite_i64;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint64_t robotraconteurlite_u64;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef float robotraconteurlite_single;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef double robotraconteurlite_double;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef size_t robotraconteurlite_size_t;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint8_t robotraconteurlite_byte;
 #define ROBOTRACONTEURLITE_INT8_MIN INT8_MIN
 #define ROBOTRACONTEURLITE_INT8_MAX INT8_MAX

@@ -105,7 +105,7 @@ struct robotraconteurlite_connection_socket
 #endif
 };
 
-#ifndef ROBOTRACONTEURLITE_NO_FUNCPTR
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
 
 struct robotraconteurlite_connection_object;
 struct robotraconteurlite_timespec;
@@ -113,11 +113,20 @@ struct robotraconteurlite_timespec;
 struct robotraconteurlite_connection_object_ops
 {
     const robotraconteurlite_status (*communicate_recv)(struct robotraconteurlite_connection_object* connection,
+                                                        struct robotraconteurlite_connection_object* connections_head,
                                                         robotraconteurlite_timespec now);
     const robotraconteurlite_status (*communicate_send)(struct robotraconteurlite_connection_object* connection,
+                                                        struct robotraconteurlite_connection_object* connections_head,
                                                         robotraconteurlite_timespec now);
     const robotraconteurlite_status (*communicate_process_control)(
-        struct robotraconteurlite_connection_object* connection, robotraconteurlite_timespec now);
+        struct robotraconteurlite_connection_object* connection,
+        struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+    const robotraconteurlite_status (*prepare_wait)(struct robotraconteurlite_connection_object* connection,
+                                                    struct robotraconteurlite_connection_object* connections_head,
+                                                    robotraconteurlite_timespec now);
+    const robotraconteurlite_status (*connection_close)(struct robotraconteurlite_connection_object* connection,
+                                                        struct robotraconteurlite_connection_object* connections_head,
+                                                        robotraconteurlite_timespec now);
 };
 #endif
 
@@ -128,7 +137,7 @@ struct robotraconteurlite_connection_object
     struct robotraconteurlite_connection_object* next;
     struct robotraconteurlite_connection_object* prev;
     struct robotraconteurlite_connection_socket sock;
-#ifndef ROBOTRACONTEURLITE_NO_FUNCPTR
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
     const struct robotraconteurlite_connection_object_ops* ops;
 #endif
 };
@@ -382,7 +391,7 @@ ROBOTRACONTEURLITE_API void robotraconteurlite_connection_init(struct robotracon
 ROBOTRACONTEURLITE_API void robotraconteurlite_connection_init_connections(
     struct robotraconteurlite_connection_object* connections_head);
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connection_impl_process_control(
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connection_impl_communicate_process_control(
     struct robotraconteurlite_connection* connection, robotraconteurlite_timespec now,
     robotraconteurlite_u32 transport_type, robotraconteurlite_u8* close_request);
 
@@ -442,6 +451,26 @@ robotraconteurlite_connection_impl_prepare_wait(struct robotraconteurlite_connec
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_connection_acceptor_impl_prepare_wait(struct robotraconteurlite_connection_acceptor* acceptor,
                                                          struct robotraconteurlite_connection_object* connection_head);
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_communicate(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_communicate_recv(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_communicate_send(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_communicate_process_control(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_prepare_wait(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_close(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+#endif
 
 #ifdef __cplusplus
 }

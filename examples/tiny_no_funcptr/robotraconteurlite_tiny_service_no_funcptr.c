@@ -465,7 +465,7 @@ int main(int argc, char* argv[])
         robotraconteurlite_clock_gettime(&clock, &now);
 
         /* Communicate with all connections */
-        if (robotraconteurlite_connections_communicate(&connections_head, now))
+        if (robotraconteurlite_tcp_connections_communicate(&connections_head, now))
         {
             printf("Could not communicate with connections\n");
             return -1;
@@ -479,7 +479,7 @@ int main(int argc, char* argv[])
 
         if (next_wake > now)
         {
-            rv = robotraconteurlite_connections_prepare_wait(&connections_head, now);
+            rv = robotraconteurlite_tcp_connections_prepare_wait(&connections_head);
             if (RRLITE_FAILED(rv))
             {
                 printf("Could not add acceptor to poll\n");
@@ -501,7 +501,7 @@ int main(int argc, char* argv[])
             robotraconteurlite_clock_gettime(&clock, &now);
 
             /* Communicate with all connections */
-            if (robotraconteurlite_connections_communicate(&connections_head, now))
+            if (robotraconteurlite_tcp_connections_communicate(&connections_head, now))
             {
                 printf("Could not communicate with connections\n");
                 return -1;
@@ -544,10 +544,11 @@ int main(int argc, char* argv[])
 
     } while (1);
 
-    robotraconteurlite_clock_gettime(&clock, &now);
+    /* Close all connections */
+    robotraconteurlite_tcp_connections_close(&connections_head);
 
-    /* Close all connection objects */
-    robotraconteurlite_connections_close(&connections_head, now);
+    /* Close the acceptor */
+    robotraconteurlite_tcp_acceptor_close(&tcp_acceptor);
 
     printf("robotraconteur_tiny_service shut down\n");
 

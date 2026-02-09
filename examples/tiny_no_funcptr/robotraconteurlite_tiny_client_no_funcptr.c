@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
         {
 
             robotraconteurlite_clock_gettime(&rr_clock, &now);
-            robotraconteurlite_connections_communicate(&connections_head, now);
+            robotraconteurlite_tcp_connection_communicate(connection, now);
             rv = robotraconteurlite_node_next_event(&node, &event, now);
             if (RRLITE_FAILED(rv))
             {
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
         do
         {
             robotraconteurlite_clock_gettime(&rr_clock, &now);
-            rv = robotraconteurlite_connections_communicate(&connections_head, now);
+            rv = robotraconteurlite_tcp_connections_communicate(&connections_head, now);
             if (RRLITE_FAILED(rv))
             {
                 printf("Could not communicate with connections\n");
@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
 
                 if (next_wake > now)
                 {
-                    rv = robotraconteurlite_connections_prepare_wait(&connections_head, now);
+                    rv = robotraconteurlite_tcp_connections_prepare_wait(&connections_head);
                     if (RRLITE_FAILED(rv))
                     {
                         printf("Could not add connections to poll\n");
@@ -348,7 +348,7 @@ int main(int argc, char* argv[])
                         return -1;
                     }
                     robotraconteurlite_clock_gettime(&rr_clock, &now);
-                    rv = robotraconteurlite_connections_communicate(&connections_head, now);
+                    rv = robotraconteurlite_tcp_connections_communicate(&connections_head, now);
                     if (RRLITE_FAILED(rv))
                     {
                         printf("Could not communicate with connections\n");
@@ -503,7 +503,7 @@ int main(int argc, char* argv[])
 
     /* TODO: Drain the connection */
     robotraconteurlite_clock_gettime(&rr_clock, &now);
-    robotraconteurlite_connections_communicate(&connections_head, now);
+    robotraconteurlite_tcp_connection_communicate(connection, now);
 
     printf("Done!\n");
 

@@ -339,7 +339,7 @@ void robotraconteurlite_connection_init_connections(struct robotraconteurlite_co
     }
 }
 
-robotraconteurlite_status robotraconteurlite_connection_impl_process_control(
+robotraconteurlite_status robotraconteurlite_connection_impl_communicate_process_control(
     struct robotraconteurlite_connection* connection, robotraconteurlite_timespec now,
     robotraconteurlite_u32 transport_type, robotraconteurlite_u8* close_request)
 {
@@ -748,3 +748,178 @@ robotraconteurlite_status robotraconteurlite_connection_acceptor_impl_prepare_wa
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+robotraconteurlite_status robotraconteurlite_connections_communicate(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    robotraconteurlite_status rv = -1;
+    struct robotraconteurlite_connection_object* c = connections_head;
+    while (c != NULL)
+    {
+        if ((c->ops != NULL) && (c->ops->communicate_process_control != NULL))
+        {
+            rv = c->ops->communicate_process_control(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
+                {
+                    c = c->next;
+                    continue;
+                }
+                return rv;
+            }
+        }
+
+        if ((c->ops != NULL) && (c->ops->communicate_recv != NULL))
+        {
+            rv = c->ops->communicate_recv(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
+                {
+                    c = c->next;
+                    continue;
+                }
+                return rv;
+            }
+        }
+
+        if ((c->ops != NULL) && (c->ops->communicate_send != NULL))
+        {
+            rv = c->ops->communicate_send(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
+                {
+                    c = c->next;
+                    continue;
+                }
+                return rv;
+            }
+        }
+
+        c = c->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_connections_communicate_recv(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_object* c = connections_head;
+    while (c != NULL)
+    {
+        if ((c->ops != NULL) && (c->ops->communicate_recv != NULL))
+        {
+            robotraconteurlite_status rv = -1;
+            rv = c->ops->communicate_recv(c, connections_head, now);
+            if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
+            {
+                c = c->next;
+                continue;
+            }
+            return rv;
+        }
+        c = c->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_connections_communicate_send(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_object* c = connections_head;
+    while (c != NULL)
+    {
+        if ((c->ops != NULL) && (c->ops->communicate_send != NULL))
+        {
+            robotraconteurlite_status rv = -1;
+            rv = c->ops->communicate_send(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
+                {
+                    c = c->next;
+                    continue;
+                }
+                return rv;
+            }
+        }
+        c = c->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_connections_communicate_process_control(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_object* c = connections_head;
+    while (c != NULL)
+    {
+        if ((c->ops != NULL) && (c->ops->communicate_process_control != NULL))
+        {
+            robotraconteurlite_status rv = -1;
+            rv = c->ops->communicate_process_control(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
+                {
+                    c = c->next;
+                    continue;
+                }
+                return rv;
+            }
+        }
+        c = c->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_connections_prepare_wait(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_object* c = connections_head;
+    while (c != NULL)
+    {
+        if ((c->ops != NULL) && (c->ops->prepare_wait != NULL))
+        {
+            robotraconteurlite_status rv = -1;
+            rv = c->ops->prepare_wait(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                return rv;
+            }
+        }
+        c = c->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_connections_close(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_object* c = connections_head;
+    while (c != NULL)
+    {
+        if ((c->ops != NULL) && (c->ops->connection_close != NULL))
+        {
+            robotraconteurlite_status rv = -1;
+            rv = c->ops->connection_close(c, connections_head, now);
+            if (FAILED(rv))
+            {
+                return rv;
+            }
+        }
+        c = c->next;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+#endif

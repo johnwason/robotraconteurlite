@@ -32,6 +32,122 @@
 #define FAILED ROBOTRACONTEURLITE_FAILED
 #define RETRY ROBOTRACONTEURLITE_RETRY
 
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+/* connections ops definition */
+static robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_recv_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    if (c == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_connection_communicate_recv(c, now);
+}
+
+static robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_send_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    if (c == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_connection_communicate_send(c, now);
+}
+
+static robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_process_control_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    if (c == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_connection_communicate_process_control(c, now);
+}
+
+static robotraconteurlite_status robotraconteurlite_tcp_connection_prepare_wait_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    if (c == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_connection_prepare_wait(c);
+}
+
+static robotraconteurlite_status robotraconteurlite_tcp_connection_close_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    if (c == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    robotraconteurlite_tcp_connection_close(c);
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+static const struct robotraconteurlite_connection_object_ops robotraconteurlite_tcp_connection_object_ops = {
+    .communicate_recv = robotraconteurlite_tcp_connection_communicate_recv_op,
+    .communicate_send = robotraconteurlite_tcp_connection_communicate_send_op,
+    .communicate_process_control = robotraconteurlite_tcp_connection_communicate_process_control_op,
+    .prepare_wait = robotraconteurlite_tcp_connection_prepare_wait_op,
+    .connection_close = robotraconteurlite_tcp_connection_close_op};
+
+/* acceptor ops definition */
+static robotraconteurlite_status robotraconteurlite_tcp_acceptor_communicate_process_control_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_acceptor* a = robotraconteurlite_connection_acceptor_cast(connection);
+    if (a == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_acceptor_communicate(a, connections_head, now);
+}
+
+static robotraconteurlite_status robotraconteurlite_tcp_acceptor_prepare_wait_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_acceptor* a = robotraconteurlite_connection_acceptor_cast(connection);
+    if (a == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_acceptor_prepare_wait(a, connections_head);
+}
+
+static robotraconteurlite_status robotraconteurlite_tcp_acceptor_close_op(
+    struct robotraconteurlite_connection_object* connection,
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
+{
+    struct robotraconteurlite_connection_acceptor* a = robotraconteurlite_connection_acceptor_cast(connection);
+    if (a == NULL)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    return robotraconteurlite_tcp_acceptor_close(a);
+}
+
+static const struct robotraconteurlite_connection_object_ops robotraconteurlite_tcp_acceptor_object_ops = {
+    .communicate_recv = NULL,
+    .communicate_send = NULL,
+    .communicate_process_control = robotraconteurlite_tcp_acceptor_communicate_process_control_op,
+    .prepare_wait = robotraconteurlite_tcp_acceptor_prepare_wait_op,
+    .connection_close = robotraconteurlite_tcp_acceptor_close_op};
+
+#endif
+
 void robotraconteurlite_tcp_acceptor_construct(struct robotraconteurlite_connection_acceptor* acceptor,
                                                struct robotraconteurlite_connection_object* connections_head)
 {
@@ -39,12 +155,14 @@ void robotraconteurlite_tcp_acceptor_construct(struct robotraconteurlite_connect
     acceptor->head.connection_object_type = ROBOTRACONTEURLITE_CONNECTION_OBJECT_TYPE_ACCEPTOR;
     acceptor->head.transport_type = ROBOTRACONTEURLITE_TCP_TRANSPORT;
 
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+    acceptor->head.ops = &robotraconteurlite_tcp_acceptor_object_ops;
+#endif
+
     if (connections_head != NULL)
     {
         robotraconteurlite_connection_list_append(connections_head, &acceptor->head);
     }
-
-    /* TODO: add ops function pointers C */
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_acceptor_listen(
@@ -105,9 +223,17 @@ robotraconteurlite_status robotraconteurlite_tcp_acceptor_communicate(
         return rv;
     }
 
-    /* TODO: Add ops function pointers */
+    rv = robotraconteurlite_connection_impl_accept2(c, now, ROBOTRACONTEURLITE_TCP_TRANSPORT, &sock);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
 
-    return robotraconteurlite_connection_impl_accept2(c, now, ROBOTRACONTEURLITE_TCP_TRANSPORT, &sock);
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+    c->head.ops = &robotraconteurlite_tcp_connection_object_ops;
+#endif
+
+    return rv;
 }
 
 static robotraconteurlite_size_t robotraconteurlite_tcp_connection_recv_websocket_header_size(
@@ -886,14 +1012,14 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_handshake(struct rob
     }
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_connection_process_control(
+robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_process_control(
     struct robotraconteurlite_connection* connection, robotraconteurlite_timespec now)
 {
     robotraconteurlite_status rv = -1;
     robotraconteurlite_u8 close_requested = 0;
 
-    rv = robotraconteurlite_connection_impl_process_control(connection, now, ROBOTRACONTEURLITE_TCP_TRANSPORT,
-                                                            &close_requested);
+    rv = robotraconteurlite_connection_impl_communicate_process_control(
+        connection, now, ROBOTRACONTEURLITE_TCP_TRANSPORT, &close_requested);
     if (FAILED(rv))
     {
         return rv;
@@ -914,7 +1040,7 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_communicate(
     robotraconteurlite_status rv = -1;
 
     /* Process control */
-    rv = robotraconteurlite_tcp_connection_process_control(connection, now);
+    rv = robotraconteurlite_tcp_connection_communicate_process_control(connection, now);
     if (FAILED(rv))
     {
         if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
@@ -1106,7 +1232,9 @@ robotraconteurlite_status robotraconteurlite_tcp_connect_service(
         return rv;
     }
 
-    /* TODO: Set function pointer ops structure */
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+    c->head.ops = &robotraconteurlite_tcp_connection_object_ops;
+#endif
 
     connect_data->client_out = c;
 

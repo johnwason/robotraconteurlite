@@ -39,6 +39,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_r
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(connections_head);
     if (c == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -51,6 +52,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_s
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(connections_head);
     if (c == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -63,6 +65,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_p
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(connections_head);
     if (c == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -75,6 +78,8 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_prepare_wait_
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(connections_head);
+    ROBOTRACONTEURLITE_UNUSED(now);
     if (c == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -87,6 +92,8 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_close_op(
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection* c = robotraconteurlite_connection_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(connections_head);
+    ROBOTRACONTEURLITE_UNUSED(now);
     if (c == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -96,11 +103,9 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_close_op(
 }
 
 static const struct robotraconteurlite_connection_object_ops robotraconteurlite_tcp_connection_object_ops = {
-    .communicate_recv = robotraconteurlite_tcp_connection_communicate_recv_op,
-    .communicate_send = robotraconteurlite_tcp_connection_communicate_send_op,
-    .communicate_process_control = robotraconteurlite_tcp_connection_communicate_process_control_op,
-    .prepare_wait = robotraconteurlite_tcp_connection_prepare_wait_op,
-    .connection_close = robotraconteurlite_tcp_connection_close_op};
+    robotraconteurlite_tcp_connection_communicate_recv_op, robotraconteurlite_tcp_connection_communicate_send_op,
+    robotraconteurlite_tcp_connection_communicate_process_control_op, robotraconteurlite_tcp_connection_prepare_wait_op,
+    robotraconteurlite_tcp_connection_close_op};
 
 /* acceptor ops definition */
 static robotraconteurlite_status robotraconteurlite_tcp_acceptor_communicate_process_control_op(
@@ -120,6 +125,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_acceptor_prepare_wait_op
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection_acceptor* a = robotraconteurlite_connection_acceptor_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(now);
     if (a == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -132,6 +138,8 @@ static robotraconteurlite_status robotraconteurlite_tcp_acceptor_close_op(
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection_acceptor* a = robotraconteurlite_connection_acceptor_cast(connection);
+    ROBOTRACONTEURLITE_UNUSED(connections_head);
+    ROBOTRACONTEURLITE_UNUSED(now);
     if (a == NULL)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -139,12 +147,10 @@ static robotraconteurlite_status robotraconteurlite_tcp_acceptor_close_op(
     return robotraconteurlite_tcp_acceptor_close(a);
 }
 
+/* cppcheck-suppress misra-c2012-8.9 */
 static const struct robotraconteurlite_connection_object_ops robotraconteurlite_tcp_acceptor_object_ops = {
-    .communicate_recv = NULL,
-    .communicate_send = NULL,
-    .communicate_process_control = robotraconteurlite_tcp_acceptor_communicate_process_control_op,
-    .prepare_wait = robotraconteurlite_tcp_acceptor_prepare_wait_op,
-    .connection_close = robotraconteurlite_tcp_acceptor_close_op};
+    NULL, NULL, &robotraconteurlite_tcp_acceptor_communicate_process_control_op,
+    &robotraconteurlite_tcp_acceptor_prepare_wait_op, &robotraconteurlite_tcp_acceptor_close_op};
 
 #endif
 

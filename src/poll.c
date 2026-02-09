@@ -38,7 +38,7 @@ robotraconteurlite_status robotraconteurlite_poll_pollfds_add_socket(struct robo
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
 
-    if (sock->sock == 0)
+    if (sock->sock == (ROBOTRACONTEURLITE_SOCKET_HANDLE)0)
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }

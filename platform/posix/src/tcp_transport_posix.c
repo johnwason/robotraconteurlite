@@ -380,7 +380,8 @@ robotraconteurlite_status robotraconteurlite_poll_impl_add_fd(ROBOTRACONTEURLITE
                                                               robotraconteurlite_size_t max_pollfds)
 {
     short extra_events = 0;
-    if ((!FLAGS_CHECK(sock_flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE)) || (sock_handle == 0))
+    if ((!FLAGS_CHECK(sock_flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE)) ||
+        (sock_handle == (ROBOTRACONTEURLITE_SOCKET_HANDLE)0))
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }

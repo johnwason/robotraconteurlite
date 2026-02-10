@@ -26,6 +26,7 @@
 #define FLAGS_CLEAR ROBOTRACONTEURLITE_FLAGS_CLEAR
 
 #define FAILED ROBOTRACONTEURLITE_FAILED
+#define SUCCEEDED ROBOTRACONTEURLITE_SUCCEEDED
 #define RETRY ROBOTRACONTEURLITE_RETRY
 
 robotraconteurlite_status robotraconteurlite_node_init(struct robotraconteurlite_node* node,
@@ -766,102 +767,652 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry_consume(
     return robotraconteurlite_connection_message_receive_consume(receive_data->connection);
 }
 
-robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service_object service_objects[], robotraconteurlite_size_t service_objects_len,
-    struct robotraconteurlite_node_service_definition service_defs[], robotraconteurlite_size_t service_defs_len)
+robotraconteurlite_status robotraconteurlite_node_split_qualified_type(
+    const struct robotraconteurlite_string* qualified_type, struct robotraconteurlite_string* service_type,
+    struct robotraconteurlite_string* service_entry_type)
 {
-
-    /* TODO: Use service_defs and service_defs_len? */
-    robotraconteurlite_size_t i = -1;
-
-    ROBOTRACONTEURLITE_UNUSED(service_defs);
-    ROBOTRACONTEURLITE_UNUSED(service_defs_len);
-
-    assert(node);
-    assert(event);
-    assert(event->received_message.received_message_entry_header.entry_type ==
-           ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETSERVICEDESC);
-
-    for (i = 0; i < service_objects_len; i++)
+    robotraconteurlite_size_t i = 0;
+    assert(qualified_type);
+    if (qualified_type->len < 3 || qualified_type->data == NULL)
     {
-        /* Compare qualified_name with service_path */
-        if (robotraconteurlite_string_cmp(&event->received_message.received_message_entry_header.service_path,
-                                          &service_objects[i].service_path) == 0)
+        return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+    }
+
+    i = qualified_type->len - 1;
+
+    do
+    {
+        i--;
+
+        if (qualified_type->data[i] == '.')
         {
-            robotraconteurlite_status rv = -1;
-            struct robotraconteurlite_node_send_messageentry_data send_data;
-            robotraconteurlite_u32 old_remote_endpoint = 0;
-            send_data.node = event->received_message.node;
-            send_data.connection = event->connection;
-            old_remote_endpoint = event->connection->remote_endpoint;
-            event->connection->remote_endpoint = event->received_message.received_message_header.sender_endpoint;
-            rv = robotraconteurlite_node_begin_send_messageentry_response(
-                &send_data, &event->received_message.received_message_entry_header);
-            event->connection->remote_endpoint = old_remote_endpoint;
-            if (FAILED(rv))
+            if (service_type)
             {
-                return rv;
-            }
-            {
-                /* Write service definition */
-                struct robotraconteurlite_string element_name_str;
-                struct robotraconteurlite_string desc_str;
-                /* TODO: Fix misra violation */
-                /* cppcheck-suppress misra-c2012-7.4 */
-                element_name_str.data = "servicedef";
-                element_name_str.len = 10;
-                desc_str.data = service_objects[i].service_def->service_definition.data;
-                desc_str.len = service_objects[i].service_def->service_definition.len;
-                rv = robotraconteurlite_messageelement_writer_write_data_string(&send_data.element_writer,
-                                                                                &element_name_str, &desc_str);
-                if (FAILED(rv))
-                {
-                    return rv;
-                }
-            }
-            {
-                /* Write empty attributes */
-                /* TODO: Support attributes */
-                struct robotraconteurlite_messageelement_writer attr_element_writer;
-                struct robotraconteurlite_messageelement_header attr_element_header;
-                (void)memset(&attr_element_header, 0, sizeof(struct robotraconteurlite_messageelement_header));
-                attr_element_header.element_type = ROBOTRACONTEURLITE_DATATYPE_MAP_STRING;
-                robotraconteurlite_string_from_c_str("attributes", &attr_element_header.element_name);
-                rv = robotraconteurlite_messageelement_writer_begin_nested_element(
-                    &send_data.element_writer, &attr_element_header, &attr_element_writer);
-                if (FAILED(rv))
-                {
-                    return rv;
-                }
-                rv = robotraconteurlite_messageelement_writer_end_nested_element(
-                    &send_data.element_writer, &attr_element_header, &attr_element_writer);
-                if (FAILED(rv))
-                {
-                    return rv;
-                }
+                service_type->data = qualified_type->data;
+                service_type->len = i;
             }
 
-            rv = robotraconteurlite_node_end_send_messageentry(&send_data);
-            if (FAILED(rv))
+            if (service_entry_type)
             {
-                return rv;
+                i++;
+                service_type->data = &qualified_type->data[i];
+                service_type->len = qualified_type->len - i;
             }
-
             return ROBOTRACONTEURLITE_ERROR_SUCCESS;
         }
-    }
-    /* TODO: Support returning named service type */
 
+    } while (i > 1);
+
+    return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+}
+
+void robotraconteurlite_node_service_definition_list_head_construct(
+    struct robotraconteurlite_node_service_definition* service_defs_head)
+{
+    (void)memset(service_defs_head, 0, sizeof(struct robotraconteurlite_node_service_definition));
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_definition_construct(
+    struct robotraconteurlite_node_service_definition* service_def,
+    const struct robotraconteurlite_string* qualified_name_str,
+    const struct robotraconteurlite_string* service_definition_str,
+    const struct robotraconteurlite_string* imported_qualified_names_str,
+    struct robotraconteurlite_node_service_definition* service_defs_head)
+{
+    robotraconteurlite_status rv = -1;
+    (void)memset(service_def, 0, sizeof(struct robotraconteurlite_node_service_definition));
+
+    rv = robotraconteurlite_string_shallow_copy_to(qualified_name_str, &service_def->qualified_name);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    service_def->qualified_name_hash = robotraconteurlite_string_hash(qualified_name_str);
+
+    rv = robotraconteurlite_string_shallow_copy_to(service_definition_str, &service_def->service_definition);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+    if (imported_qualified_names_str != NULL)
+    {
+        rv = robotraconteurlite_string_shallow_copy_to(imported_qualified_names_str,
+                                                       &service_def->imported_qualified_names);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+    }
+
+    if (service_defs_head)
+    {
+        struct robotraconteurlite_node_service_definition* c = service_defs_head;
+        while (c->next != NULL)
+        {
+            c = c->next;
+        }
+        c->next = service_def;
+        service_def->prev = c;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_service_definition(
+    struct robotraconteurlite_node_service_definition* service_defs_head,
+    const struct robotraconteurlite_string* qualified_name_str)
+{
+    robotraconteurlite_u32 hash;
+    assert(service_defs_head != NULL);
+    assert(qualified_name_str != NULL);
+
+    if ((qualified_name_str->len == 0) || (qualified_name_str->data == NULL))
+    {
+        return NULL;
+    }
+
+    hash = robotraconteurlite_string_hash(qualified_name_str);
+
+    {
+        struct robotraconteurlite_node_service_definition* c = service_defs_head->next;
+        while (c != NULL)
+        {
+            if ((c->qualified_name_hash == hash) &&
+                (robotraconteurlite_string_cmp(&c->qualified_name, qualified_name_str) == 0))
+            {
+                return c;
+            }
+            c = c->next;
+        }
+    }
+
+    return NULL;
+}
+
+struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_service_definition_for_entry(
+    struct robotraconteurlite_node_service_definition* service_defs_head,
+    const struct robotraconteurlite_string* qualified_entry_name_str)
+{
+    struct robotraconteurlite_string qualified_name_str;
+    robotraconteurlite_status rv = -1;
+
+    rv = robotraconteurlite_node_split_qualified_type(qualified_entry_name_str, &qualified_name_str, NULL);
+    if (FAILED(rv))
+    {
+        NULL;
+    }
+
+    return robotraconteurlite_node_find_service_definition(service_defs_head, &qualified_name_str);
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_definition_construct_c_str(
+    struct robotraconteurlite_node_service_definition* service_def, const char* qualified_name_str,
+    const char* service_definition_str, const char* imported_qualified_names_str,
+    struct robotraconteurlite_node_service_definition* service_defs_head)
+{
+    struct robotraconteurlite_string qualified_name_rrstr;
+    struct robotraconteurlite_string service_definition_rrstr;
+    struct robotraconteurlite_string imported_qualified_names_rrstr;
+
+    robotraconteurlite_string_from_c_str(qualified_name_str, &qualified_name_rrstr);
+    robotraconteurlite_string_from_c_str(service_definition_str, &service_definition_rrstr);
+    robotraconteurlite_string_from_c_str(imported_qualified_names_str, &imported_qualified_names_rrstr);
+
+    return robotraconteurlite_node_service_definition_construct(service_def, &qualified_name_rrstr,
+                                                                &service_definition_rrstr,
+                                                                &imported_qualified_names_rrstr, service_defs_head);
+}
+
+void robotraconteurlite_node_service_object_list_head_construct(
+    struct robotraconteurlite_node_service_object* service_objects_head)
+{
+    (void)memset(service_objects_head, 0, sizeof(struct robotraconteurlite_node_service_object));
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_object_construct(
+    struct robotraconteurlite_node_service_object* service_object, const struct robotraconteurlite_string* service_path,
+    const struct robotraconteurlite_string* qualified_type,
+    const struct robotraconteurlite_string* implemented_qualified_types,
+    struct robotraconteurlite_node_service* service)
+{
+    robotraconteurlite_status rv = -1;
+    (void)memset(service_object, 0, sizeof(struct robotraconteurlite_node_service_object));
+
+    rv = robotraconteurlite_string_shallow_copy_to(service_path, &service_object->service_path);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    service_object->service_path_hash = robotraconteurlite_string_hash(service_path);
+
+    rv = robotraconteurlite_string_shallow_copy_to(qualified_type, &service_object->qualified_type);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    if (implemented_qualified_types != NULL)
+    {
+        rv = robotraconteurlite_string_shallow_copy_to(implemented_qualified_types,
+                                                       &service_object->implemented_qualified_types);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+    }
+
+    if (service)
+    {
+        struct robotraconteurlite_node_service_object* c = &service->service_objects_head;
+        while (c->next != NULL)
+        {
+            c = c->next;
+        }
+        c->next = service_object;
+        service_object->prev = c;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_object_construct_c_str(
+    struct robotraconteurlite_node_service_object* service_object, const char* service_path, const char* qualified_type,
+    const char* implemented_qualified_types, struct robotraconteurlite_node_service* service)
+{
+    struct robotraconteurlite_string service_path_str;
+    struct robotraconteurlite_string qualified_type_str;
+    struct robotraconteurlite_string implemented_qualified_types_str;
+
+    robotraconteurlite_string_from_c_str(service_path, &service_path_str);
+    robotraconteurlite_string_from_c_str(qualified_type, &qualified_type_str);
+    robotraconteurlite_string_from_c_str(implemented_qualified_types, &implemented_qualified_types_str);
+
+    return robotraconteurlite_node_service_object_construct(service_object, &service_path_str, &qualified_type_str,
+                                                            &implemented_qualified_types_str, service);
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_construct(
+    struct robotraconteurlite_node_service* service, const struct robotraconteurlite_string* service_name,
+    struct robotraconteurlite_node_service* services_head)
+{
+    robotraconteurlite_status rv = -1;
+    (void)memset(service, 0, sizeof(struct robotraconteurlite_node_service));
+
+    rv = robotraconteurlite_string_shallow_copy_to(service_name, &service->service_name);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    service->service_name_hash = robotraconteurlite_string_hash(service_name);
+    if (services_head)
+    {
+        struct robotraconteurlite_node_service* c = services_head;
+        while (c->next != NULL)
+        {
+            c = c->next;
+        }
+        c->next = service;
+        service->prev = c;
+    }
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_construct_c_str(
+    struct robotraconteurlite_node_service* service, const char* service_name,
+    struct robotraconteurlite_node_service* services_head)
+{
+    struct robotraconteurlite_string service_name_str;
+    robotraconteurlite_string_from_c_str(service_name, &service_name_str);
+    return robotraconteurlite_node_service_construct(service, &service_name_str, services_head);
+}
+
+void robotraconteurlite_node_service_list_head_construct(struct robotraconteurlite_node_service* service_objects_head)
+{
+    (void)memset(service_objects_head, 0, sizeof(struct robotraconteurlite_node_service));
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_set_root_object(
+    struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object)
+{
+    if (service->service_objects_head.next != NULL || service->root_service_object != NULL)
+    {
+        /* root service object must be set first */
+        return ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION;
+    }
+
+    if (robotraconteurlite_string_cmp(&service->service_name, &service_object->service_path) != 0)
+    {
+        /* root service path must match service name */
+        return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+    }
+
+    service->service_objects_head.next = service_object;
+    service_object->prev = &service->service_objects_head;
+    service->root_service_object = service_object;
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_add_service_object(
+    struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object)
+{
+    if (service->service_objects_head.next == NULL || service->root_service_object == NULL)
+    {
+        /* root service object must be set first */
+        return ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION;
+    }
+
+    if (robotraconteurlite_node_is_service_path_prefix(&service->service_name, &service_object->service_path).logical ==
+        0)
+    {
+        /* service object must have root service name in service path */
+        return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+    }
+
+    {
+        struct robotraconteurlite_node_service_object* c = service->service_objects_head.next;
+        struct robotraconteurlite_node_service_object* c_last = service->service_objects_head.next;
+        while (c != NULL)
+        {
+            if (robotraconteurlite_string_cmp(&service_object->service_path, &c->service_path) == 0)
+            {
+                /* duplicate service path! */
+                return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+            }
+            c_last = c;
+            c = c->next;
+        }
+
+        c_last->next = service_object;
+        service_object->prev = c_last;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_node_service_remove_service_object(
+    struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object)
+{
+    assert(service != NULL);
+    assert(service_object != NULL);
+    assert(service_object->prev != NULL);
+
+    if ((service->service_objects_head.next == service_object) || (service->root_service_object == service_object))
+    {
+        /* cannot remove root object */
+        return ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION;
+    }
+
+    {
+        struct robotraconteurlite_node_service_object* c = &service->service_objects_head;
+        do
+        {
+            if (c->next == service_object)
+            {
+                break;
+            }
+            if (c->next == NULL)
+            {
+                /* service object not in service */
+                return ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION;
+            }
+            c = c->next;
+        } while (c != NULL);
+    }
+
+    service_object->prev->next = service_object->next;
+    if (service_object->next)
+    {
+        service_object->next->prev = service_object->prev;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+struct robotraconteurlite_bool robotraconteurlite_node_is_service_path_prefix(
+    const struct robotraconteurlite_string* path_prefix, const struct robotraconteurlite_string* service_path)
+{
+    struct robotraconteurlite_bool ret;
+    ret.logical = 0;
+
+    assert(path_prefix != NULL);
+    assert(service_path != NULL);
+    assert(path_prefix->data != NULL);
+    assert(service_path->data != NULL);
+    assert(path_prefix->len > 0);
+    assert(service_path->len > 0);
+
+    if (service_path->len < path_prefix->len)
+    {
+        return ret;
+    }
+
+    if (service_path->len == path_prefix->len)
+    {
+        ret.logical = memcmp(service_path->data, path_prefix->data, path_prefix->len) == 0 ? 1 : 0;
+        return ret;
+    }
+
+    ret.logical = ((memcmp(service_path->data, path_prefix->data, path_prefix->len) == 0) &&
+                   (service_path->data[path_prefix->len] == '.'))
+                      ? 1
+                      : 0;
+    return ret;
+}
+
+struct robotraconteurlite_node_service* robotraconteurlite_node_find_service_for_path(
+    struct robotraconteurlite_node_service* services_head, const struct robotraconteurlite_string* service_path)
+{
+    robotraconteurlite_size_t l = 1;
+    struct robotraconteurlite_string service_path_prefix;
+    robotraconteurlite_u32 hash = 0;
+    assert(services_head != NULL);
+    assert(service_path != NULL);
+
+    service_path_prefix.data = service_path->data;
+    service_path_prefix.len = service_path->len;
+
+    if ((service_path->len == 0) || (service_path->data == NULL))
+    {
+        return NULL;
+    }
+
+    while (l < service_path->len)
+    {
+        if (service_path->data[l] == '.')
+        {
+            break;
+        }
+        l++;
+    }
+
+    if (l < service_path->len)
+    {
+        service_path_prefix.len = l;
+    }
+
+    hash = robotraconteurlite_string_hash(&service_path_prefix);
+
+    {
+        struct robotraconteurlite_node_service* c = services_head->next;
+        while (c != NULL)
+        {
+            if ((c->service_name_hash == hash) &&
+                (robotraconteurlite_string_cmp(&c->service_name, &service_path_prefix) == 0))
+            {
+                return c;
+            }
+            c = c->next;
+        }
+    }
+
+    return NULL;
+}
+
+struct robotraconteurlite_node_service_object* robotraconteurlite_node_find_service_object_for_path(
+    struct robotraconteurlite_node_service_object* service_objects_head,
+    const struct robotraconteurlite_string* service_path)
+{
+    robotraconteurlite_u32 hash;
+    assert(service_objects_head != NULL);
+    assert(service_path != NULL);
+
+    if ((service_path->len == 0) || (service_path->data == NULL))
+    {
+        return NULL;
+    }
+
+    hash = robotraconteurlite_string_hash(service_path);
+
+    {
+        struct robotraconteurlite_node_service_object* c = service_objects_head->next;
+        while (c != NULL)
+        {
+            if ((c->service_path_hash == hash) && (robotraconteurlite_string_cmp(&c->service_path, service_path) == 0))
+            {
+                return c;
+            }
+            c = c->next;
+        }
+    }
+
+    return NULL;
+}
+
+static robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition_reply_service_def(
+    struct robotraconteurlite_event* event, const struct robotraconteurlite_string* service_def_str)
+{
+    robotraconteurlite_status rv = -1;
+    struct robotraconteurlite_node_send_messageentry_data send_data;
+    robotraconteurlite_u32 old_remote_endpoint = 0;
+
+    assert(event);
+    assert(service_def_str);
+    assert(service_def_str->data > 0);
+    assert(service_def_str->data);
+
+    send_data.node = event->received_message.node;
+    send_data.connection = event->connection;
+    old_remote_endpoint = event->connection->remote_endpoint;
+    event->connection->remote_endpoint = event->received_message.received_message_header.sender_endpoint;
+    rv = robotraconteurlite_node_begin_send_messageentry_response(
+        &send_data, &event->received_message.received_message_entry_header);
+    event->connection->remote_endpoint = old_remote_endpoint;
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+    {
+        /* Write service definition */
+        struct robotraconteurlite_string element_name_str;
+        /* TODO: Fix misra violation */
+        /* cppcheck-suppress misra-c2012-7.4 */
+        element_name_str.data = "servicedef";
+        element_name_str.len = 10;
+        rv = robotraconteurlite_messageelement_writer_write_data_string(&send_data.element_writer, &element_name_str,
+                                                                        service_def_str);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+    }
+    {
+        /* Write empty attributes */
+        /* TODO: Support attributes */
+        struct robotraconteurlite_messageelement_writer attr_element_writer;
+        struct robotraconteurlite_messageelement_header attr_element_header;
+        (void)memset(&attr_element_header, 0, sizeof(struct robotraconteurlite_messageelement_header));
+        attr_element_header.element_type = ROBOTRACONTEURLITE_DATATYPE_MAP_STRING;
+        robotraconteurlite_string_from_c_str("attributes", &attr_element_header.element_name);
+        rv = robotraconteurlite_messageelement_writer_begin_nested_element(&send_data.element_writer,
+                                                                           &attr_element_header, &attr_element_writer);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+        rv = robotraconteurlite_messageelement_writer_end_nested_element(&send_data.element_writer,
+                                                                         &attr_element_header, &attr_element_writer);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+    }
+
+    rv = robotraconteurlite_node_end_send_messageentry(&send_data);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+static robotraconteurlite_status
+robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event)
+{
     /* Return ServiceNotFound error message */
     return robotraconteurlite_connection_send_messageentry_error_response(
         node, event->connection, &event->received_message.received_message_entry_header,
         ROBOTRACONTEURLITE_MESSAGEERRORTYPE_SERVICENOTFOUND, "RobotRaconteur.ServiceNotFound", "Service not found");
 }
 
+robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
+    struct robotraconteurlite_node_service* services_head,
+    struct robotraconteurlite_node_service_definition* service_defs_head)
+{
+
+    assert(node);
+    assert(event);
+    assert(event->received_message.received_message_entry_header.entry_type ==
+           ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETSERVICEDESC);
+    assert(services_head != NULL);
+    assert(service_defs_head != NULL);
+
+    {
+        /* find if "servicetype" or "ServiceType" elements exist */
+        robotraconteurlite_status rv = -1;
+        struct robotraconteurlite_string element_name;
+        struct robotraconteurlite_messageelement_reader element_reader;
+        robotraconteurlite_string_from_c_str("servicetype", &element_name);
+        rv = robotraconteurlite_messageentry_reader_find_element(&event->received_message.entry_reader, &element_name,
+                                                                 &element_reader);
+        if (FAILED(rv))
+        {
+            if (rv != ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND)
+            {
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
+                                                                                                                event);
+            }
+        }
+
+        robotraconteurlite_string_from_c_str("ServiceType", &element_name);
+        rv = robotraconteurlite_messageentry_reader_find_element(&event->received_message.entry_reader, &element_name,
+                                                                 &element_reader);
+        if (FAILED(rv))
+        {
+            if (rv != ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND)
+            {
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
+                                                                                                                event);
+            }
+        }
+
+        if (SUCCEEDED(rv))
+        {
+            char servicetype_storage[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
+            struct robotraconteurlite_string servicetype_str;
+            struct robotraconteurlite_node_service_definition* def;
+            servicetype_str.data = servicetype_storage;
+            servicetype_str.len = sizeof(servicetype_storage);
+            rv = robotraconteurlite_messageelement_reader_read_data_string(&element_reader, &servicetype_str);
+            if (FAILED(rv))
+            {
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
+                                                                                                                event);
+            }
+
+            def = robotraconteurlite_node_find_service_definition(service_defs_head, &servicetype_str);
+            if (def == NULL)
+            {
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
+                                                                                                                event);
+            }
+
+            return robotraconteurlite_node_event_special_request_service_definition_reply_service_def(
+                event, &def->service_definition);
+        }
+    }
+
+    {
+        struct robotraconteurlite_node_service* srv;
+        srv = robotraconteurlite_node_find_service_for_path(
+            services_head, &event->received_message.received_message_entry_header.service_path);
+        if (srv != NULL)
+        {
+            struct robotraconteurlite_node_service_definition* def;
+            def = robotraconteurlite_node_find_service_definition_for_entry(service_defs_head,
+                                                                            &srv->root_service_object->qualified_type);
+            if (def != NULL)
+            {
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_def(
+                    event, &def->service_definition);
+            }
+        }
+    }
+
+    /* TODO: handle clientversion field? */
+
+    return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node, event);
+}
+
 robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name(
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service_object service_objects[], robotraconteurlite_size_t service_objects_len)
+    struct robotraconteurlite_node_service_object* service_objects_head)
 {
     robotraconteurlite_size_t i = 0;
     assert(node);
@@ -869,49 +1420,70 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
     assert(event->received_message.received_message_entry_header.entry_type ==
            ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME);
 
-    for (i = 0; i < service_objects_len; i++)
+    struct robotraconteurlite_node_service_object* service_object =
+        robotraconteurlite_node_find_service_object_for_path(
+            service_objects_head, &event->received_message.received_message_entry_header.service_path);
+
+    if (service_object != NULL)
     {
-        /* Compare qualified_name with service_path */
-        if (robotraconteurlite_string_cmp(&event->received_message.received_message_entry_header.service_path,
-                                          &service_objects[i].service_path) == 0)
+        robotraconteurlite_status rv = -1;
+        struct robotraconteurlite_node_send_messageentry_data send_data;
+        robotraconteurlite_u32 old_remote_endpoint = 0;
+        send_data.node = event->received_message.node;
+        send_data.connection = event->connection;
+        old_remote_endpoint = event->connection->remote_endpoint;
+        event->connection->remote_endpoint = event->received_message.received_message_header.sender_endpoint;
+        rv = robotraconteurlite_node_begin_send_messageentry_response(
+            &send_data, &event->received_message.received_message_entry_header);
+        event->connection->remote_endpoint = old_remote_endpoint;
+        if (FAILED(rv))
         {
-            robotraconteurlite_status rv = -1;
-            struct robotraconteurlite_node_send_messageentry_data send_data;
-            robotraconteurlite_u32 old_remote_endpoint = 0;
-            send_data.node = event->received_message.node;
-            send_data.connection = event->connection;
-            old_remote_endpoint = event->connection->remote_endpoint;
-            event->connection->remote_endpoint = event->received_message.received_message_header.sender_endpoint;
-            rv = robotraconteurlite_node_begin_send_messageentry_response(
-                &send_data, &event->received_message.received_message_entry_header);
-            event->connection->remote_endpoint = old_remote_endpoint;
-            if (FAILED(rv))
-            {
-                return rv;
-            }
-            {
-                /* Write object type name */
-                struct robotraconteurlite_string element_name_str;
-                struct robotraconteurlite_string type_name_str;
-                robotraconteurlite_string_from_c_str("objecttype", &element_name_str);
-                type_name_str.data = service_objects[i].qualified_type.data;
-                type_name_str.len = service_objects[i].qualified_type.len;
-                rv = robotraconteurlite_messageelement_writer_write_data_string(&send_data.element_writer,
-                                                                                &element_name_str, &type_name_str);
-                if (FAILED(rv))
-                {
-                    return rv;
-                }
-            }
-
-            rv = robotraconteurlite_node_end_send_messageentry(&send_data);
-            if (FAILED(rv))
-            {
-                return rv;
-            }
-
-            return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+            return rv;
         }
+        {
+            /* Write object type name */
+            struct robotraconteurlite_string element_name_str;
+            struct robotraconteurlite_string type_name_str;
+            robotraconteurlite_string_from_c_str("objecttype", &element_name_str);
+            type_name_str.data = service_object->qualified_type.data;
+            type_name_str.len = service_object->qualified_type.len;
+            rv = robotraconteurlite_messageelement_writer_write_data_string(&send_data.element_writer,
+                                                                            &element_name_str, &type_name_str);
+            if (FAILED(rv))
+            {
+                return rv;
+            }
+
+            /* TODO: object implements */
+        }
+
+        rv = robotraconteurlite_node_end_send_messageentry(&send_data);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    /* Return ObjectNotFound error message */
+    return robotraconteurlite_connection_send_messageentry_error_response(
+        node, event->connection, &event->received_message.received_message_entry_header,
+        ROBOTRACONTEURLITE_MESSAGEERRORTYPE_OBJECTNOTFOUND, "RobotRaconteur.ObjectNotFound", "Object not found");
+}
+
+robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name2(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
+    struct robotraconteurlite_node_service* services_head)
+{
+    struct robotraconteurlite_node_service* obj;
+    robotraconteurlite_status rv = -1;
+
+    obj = robotraconteurlite_node_find_service_for_path(
+        services_head, &event->received_message.received_message_entry_header.service_path);
+    if (obj != NULL)
+    {
+        return robotraconteurlite_node_event_special_request_object_type_name(node, event, &obj->service_objects_head);
     }
 
     /* Return ObjectNotFound error message */

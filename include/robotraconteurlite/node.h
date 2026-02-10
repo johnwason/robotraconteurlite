@@ -97,14 +97,33 @@ struct robotraconteurlite_node_receive_messageentry_data
 struct robotraconteurlite_node_service_definition
 {
     struct robotraconteurlite_string qualified_name;
+    robotraconteurlite_u32 qualified_name_hash;
     struct robotraconteurlite_string service_definition;
+    struct robotraconteurlite_string imported_qualified_names;
+    struct robotraconteurlite_node_service_definition* prev;
+    struct robotraconteurlite_node_service_definition* next;
 };
 
 struct robotraconteurlite_node_service_object
 {
     struct robotraconteurlite_string service_path;
+    robotraconteurlite_u32 service_path_hash;
     struct robotraconteurlite_string qualified_type;
-    struct robotraconteurlite_node_service_definition* service_def;
+    struct robotraconteurlite_string implemented_qualified_types;
+    struct robotraconteurlite_node_service_object* prev;
+    struct robotraconteurlite_node_service_object* next;
+    struct robotraconteurlite_user_storage* user_storage;
+};
+
+struct robotraconteurlite_node_service
+{
+    struct robotraconteurlite_string service_name;
+    robotraconteurlite_u32 service_name_hash;
+    struct robotraconteurlite_node_service_object service_objects_head;
+    struct robotraconteurlite_node_service_object* root_service_object;
+    struct robotraconteurlite_node_service* prev;
+    struct robotraconteurlite_node_service* next;
+    struct robotraconteurlite_user_storage* user_storage;
 };
 
 struct robotraconteurlite_event
@@ -197,14 +216,90 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_send_me
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
     struct robotraconteurlite_messageentry_header* request_message_entry_header);
 
+ROBOTRACONTEURLITE_API void robotraconteurlite_node_service_definition_list_head_construct(
+    struct robotraconteurlite_node_service_definition* service_defs_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_definition_construct(
+    struct robotraconteurlite_node_service_definition* service_def,
+    const struct robotraconteurlite_string* qualified_name_str,
+    const struct robotraconteurlite_string* service_definition_str,
+    const struct robotraconteurlite_string* imported_qualified_names_str,
+    struct robotraconteurlite_node_service_definition* service_defs_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_split_qualified_type(
+    const struct robotraconteurlite_string* qualified_type, struct robotraconteurlite_string* service_type,
+    struct robotraconteurlite_string* service_entry_type);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_definition_construct_c_str(
+    struct robotraconteurlite_node_service_definition* service_def, const char* qualified_name_str,
+    const char* service_definition_str, const char* imported_qualified_names_str,
+    struct robotraconteurlite_node_service_definition* service_defs_head);
+
+ROBOTRACONTEURLITE_API struct robotraconteurlite_node_service_definition*
+robotraconteurlite_node_find_service_definition(struct robotraconteurlite_node_service_definition* service_defs_head,
+                                                const struct robotraconteurlite_string* qualified_name_str);
+
+ROBOTRACONTEURLITE_API struct robotraconteurlite_node_service_definition*
+robotraconteurlite_node_find_service_definition_for_entry(
+    struct robotraconteurlite_node_service_definition* service_defs_head,
+    const struct robotraconteurlite_string* qualified_entry_name_str);
+
+ROBOTRACONTEURLITE_API void robotraconteurlite_node_service_object_list_head_construct(
+    struct robotraconteurlite_node_service_object* service_objects_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_object_construct(
+    struct robotraconteurlite_node_service_object* service_object, const struct robotraconteurlite_string* service_path,
+    const struct robotraconteurlite_string* qualified_type,
+    const struct robotraconteurlite_string* implemented_qualified_types,
+    struct robotraconteurlite_node_service* service);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_object_construct_c_str(
+    struct robotraconteurlite_node_service_object* service_object, const char* service_path, const char* qualified_type,
+    const char* implemented_qualified_types, struct robotraconteurlite_node_service* service);
+
+ROBOTRACONTEURLITE_API void robotraconteurlite_node_service_list_head_construct(
+    struct robotraconteurlite_node_service* service_objects_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_construct(
+    struct robotraconteurlite_node_service* service, const struct robotraconteurlite_string* service_name,
+    struct robotraconteurlite_node_service* services_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_construct_c_str(
+    struct robotraconteurlite_node_service* service, const char* service_name,
+    struct robotraconteurlite_node_service* services_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_set_root_object(
+    struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_add_service_object(
+    struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_remove_service_object(
+    struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object);
+
+ROBOTRACONTEURLITE_API struct robotraconteurlite_bool robotraconteurlite_node_is_service_path_prefix(
+    const struct robotraconteurlite_string* path_prefix, const struct robotraconteurlite_string* service_path);
+
+ROBOTRACONTEURLITE_API struct robotraconteurlite_node_service* robotraconteurlite_node_find_service_for_path(
+    struct robotraconteurlite_node_service* services_head, const struct robotraconteurlite_string* service_path);
+
+ROBOTRACONTEURLITE_API struct robotraconteurlite_node_service_object*
+robotraconteurlite_node_find_service_object_for_path(
+    struct robotraconteurlite_node_service_object* service_objects_head,
+    const struct robotraconteurlite_string* service_path);
+
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition(
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service_object service_objects[], robotraconteurlite_size_t service_objects_len,
-    struct robotraconteurlite_node_service_definition service_defs[], robotraconteurlite_size_t service_defs_len);
+    struct robotraconteurlite_node_service* services_head,
+    struct robotraconteurlite_node_service_definition* service_defs_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name(
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service_object service_objects[], robotraconteurlite_size_t service_objects_len);
+    struct robotraconteurlite_node_service_object* service_objects_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name2(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
+    struct robotraconteurlite_node_service* services_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_event_is_member(
     struct robotraconteurlite_event* event, const char* service_path, const char* member_name);

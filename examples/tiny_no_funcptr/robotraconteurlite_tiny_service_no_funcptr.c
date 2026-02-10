@@ -43,15 +43,17 @@ const robotraconteurlite_u16 node_port = 22228;
 const char* default_nodeid_str = "c22551ad-f41e-43b8-9f78-2fb80118ea3c";
 
 const char* service_name = "tiny_service";
-const char* service_def = "service example.tiny_service\n\n"
-                          "option version 0.10\n\n"
-                          "object tiny_object\n"
-                          "property double d1\n"
-                          "end\n\n";
+const char* service_def_str = "service example.tiny_service\n\n"
+                              "option version 0.10\n\n"
+                              "object tiny_object\n"
+                              "property double d1\n"
+                              "end\n\n";
 const char* service_def_qualified_name = "example.tiny_service";
 const char* root_object_type = "example.tiny_service.tiny_object";
 
-int handle_message(struct robotraconteurlite_node* node, struct robotraconteurlite_event* event)
+int handle_message(struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
+                   struct robotraconteurlite_node_service* services_head,
+                   struct robotraconteurlite_node_service_definition* service_defs_head)
 {
     robotraconteurlite_status rv = robotraconteurlite_node_event_special_request(node, event);
     if (RRLITE_FAILED(rv))
@@ -67,22 +69,11 @@ int handle_message(struct robotraconteurlite_node* node, struct robotraconteurli
     switch (event->received_message.received_message_entry_header.entry_type)
     {
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETSERVICEDESC: {
-        struct robotraconteurlite_node_service_definition service_def_s;
-        struct robotraconteurlite_node_service_object service_obj_s;
-        robotraconteurlite_string_from_c_str(service_def, &service_def_s.service_definition);
-        robotraconteurlite_string_from_c_str(service_def_qualified_name, &service_def_s.qualified_name);
-        robotraconteurlite_string_from_c_str(service_name, &service_obj_s.service_path);
-        robotraconteurlite_string_from_c_str(root_object_type, &service_obj_s.qualified_type);
-        service_obj_s.service_def = &service_def_s;
-
-        return robotraconteurlite_node_event_special_request_service_definition(node, event, &service_obj_s, 1,
-                                                                                &service_def_s, 1);
+        return robotraconteurlite_node_event_special_request_service_definition(node, event, services_head,
+                                                                                service_defs_head);
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME: {
-        struct robotraconteurlite_node_service_object service_obj_s;
-        robotraconteurlite_string_from_c_str(service_name, &service_obj_s.service_path);
-        robotraconteurlite_string_from_c_str(root_object_type, &service_obj_s.qualified_type);
-        return robotraconteurlite_node_event_special_request_object_type_name(node, event, &service_obj_s, 1);
+        return robotraconteurlite_node_event_special_request_object_type_name2(node, event, services_head);
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CLIENTKEEPALIVEREQ: {
         robotraconteurlite_status rv = robotraconteurlite_node_send_messageentry_empty_response(
@@ -223,7 +214,9 @@ int handle_message(struct robotraconteurlite_node* node, struct robotraconteurli
     return 0;
 }
 
-int handle_event(struct robotraconteurlite_node* node, struct robotraconteurlite_event* event)
+int handle_event(struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
+                 struct robotraconteurlite_node_service* services_head,
+                 struct robotraconteurlite_node_service_definition* service_defs_head)
 {
     switch (event->event_type)
     {
@@ -250,7 +243,7 @@ int handle_event(struct robotraconteurlite_node* node, struct robotraconteurlite
         robotraconteurlite_status rv = -1;
         printf("Message received\n");
         /* Handle the message */
-        rv = handle_message(node, event);
+        rv = handle_message(node, event, services_head, service_defs_head);
         if (RETRY(rv))
         {
             return 0;
@@ -367,6 +360,11 @@ int main(int argc, char* argv[])
     struct robotraconteurlite_clock clock;
     robotraconteurlite_timespec now = 0;
     const char* nodeid_str = default_nodeid_str;
+    struct robotraconteurlite_node_service_definition service_defs_head;
+    struct robotraconteurlite_node_service_definition service_def;
+    struct robotraconteurlite_node_service services_head;
+    struct robotraconteurlite_node_service service;
+    struct robotraconteurlite_node_service_object service_obj;
 
 #ifndef _WIN32
     struct sigaction sa;
@@ -416,6 +414,17 @@ int main(int argc, char* argv[])
             return -1;
         }
     }
+
+    /* Construct service definitions */
+    robotraconteurlite_node_service_definition_list_head_construct(&service_defs_head);
+    robotraconteurlite_node_service_definition_construct_c_str(
+        &service_def, service_def_qualified_name, service_def_str, service_def_qualified_name, &service_defs_head);
+
+    /* Construct service objects */
+    robotraconteurlite_node_service_list_head_construct(&services_head);
+    robotraconteurlite_node_service_construct_c_str(&service, service_name, &services_head);
+    robotraconteurlite_node_service_object_construct_c_str(&service_obj, service_name, root_object_type, NULL, NULL);
+    robotraconteurlite_node_service_set_root_object(&service, &service_obj);
 
     /* Construct the connection object head */
     robotraconteurlite_connection_list_head_construct(&connections_head);
@@ -522,7 +531,7 @@ int main(int argc, char* argv[])
                 return -1;
             }
 
-            rv = handle_event(&node, &event);
+            rv = handle_event(&node, &event, &services_head, &service_defs_head);
             if (rv == 1)
             {
                 break;

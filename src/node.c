@@ -2025,5 +2025,7 @@ robotraconteurlite_status robotraconteurlite_node_set_services(
     assert(node != NULL);
     node->services_head = services_head;
     node->service_defs_head = service_defs_head;
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 #endif

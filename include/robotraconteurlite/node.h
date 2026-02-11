@@ -41,6 +41,9 @@ enum robotraconteurlite_event_type
     ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT
 };
 
+struct robotraconteurlite_node_service;
+struct robotraconteurlite_node_service_definition;
+
 struct robotraconteurlite_node
 {
     /* Connections linked list */
@@ -55,6 +58,10 @@ struct robotraconteurlite_node
 
     /* Event information */
     robotraconteurlite_size_t events_serviced;
+
+    /* Services */
+    struct robotraconteurlite_node_service* services_head;
+    struct robotraconteurlite_node_service_object* service_defs_head;
 };
 
 struct robotraconteurlite_node_send_messageentry_data
@@ -129,6 +136,7 @@ struct robotraconteurlite_node_service
 struct robotraconteurlite_event
 {
     enum robotraconteurlite_event_type event_type;
+    struct robotraconteurlite_node* node;
     struct robotraconteurlite_connection* connection;
     struct robotraconteurlite_node_receive_messageentry_data received_message;
     int event_error_code;
@@ -179,10 +187,10 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_next_ev
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event, robotraconteurlite_timespec now);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status
-robotraconteurlite_node_consume_event(struct robotraconteurlite_node* node, struct robotraconteurlite_event* event);
+robotraconteurlite_node_consume_event(struct robotraconteurlite_event* event);
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event);
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_event_special_request(struct robotraconteurlite_event* event);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_verify_incoming_message(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
@@ -289,17 +297,14 @@ robotraconteurlite_node_find_service_object_for_path(
     const struct robotraconteurlite_string* service_path);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service* services_head,
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head,
     struct robotraconteurlite_node_service_definition* service_defs_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service_object* service_objects_head);
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_service_object* service_objects_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name2(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service* services_head);
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_event_is_member(
     struct robotraconteurlite_event* event, const char* service_path, const char* member_name);
@@ -340,6 +345,12 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_transpo
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_transport_populate_capabilities(
     struct robotraconteurlite_messageelement_writer* element_writer, robotraconteurlite_u32 capability_flags);
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_set_services(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_node_service* services_head,
+    struct robotraconteurlite_node_service_object* service_defs_head);
+#endif
 
 #ifdef __cplusplus
 }

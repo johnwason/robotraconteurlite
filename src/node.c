@@ -131,9 +131,11 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
                                                              robotraconteurlite_timespec now)
 {
     struct robotraconteurlite_connection* c = NULL;
+    event->node = node;
     if (!node->connections_next)
     {
         robotraconteurlite_clear_event(event);
+        event->node = node;
         event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE;
         event->events_serviced = node->events_serviced;
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
@@ -153,6 +155,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
         if (robotraconteurlite_connection_is_closed_event(c) != 0)
         {
             robotraconteurlite_clear_event(event);
+            event->node = node;
             node->events_serviced++;
             event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED;
             event->connection = c;
@@ -162,6 +165,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
         if (robotraconteurlite_connection_is_error(c) != 0)
         {
             robotraconteurlite_clear_event(event);
+            event->node = node;
             node->events_serviced++;
             event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_ERROR;
             event->connection = c;
@@ -171,6 +175,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
         if (robotraconteurlite_connection_is_connected_event(c) != 0)
         {
             robotraconteurlite_clear_event(event);
+            event->node = node;
             node->events_serviced++;
             event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CONNECTED;
             event->connection = c;
@@ -180,6 +185,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
         if (robotraconteurlite_connection_is_message_sent_event(c) != 0)
         {
             robotraconteurlite_clear_event(event);
+            event->node = node;
             node->events_serviced++;
             event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_SEND_COMPLETE;
             event->connection = c;
@@ -189,6 +195,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
         if (robotraconteurlite_connection_is_message_received_event(c) != 0)
         {
             robotraconteurlite_clear_event(event);
+            event->node = node;
             node->events_serviced++;
             event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED;
             event->connection = c;
@@ -208,6 +215,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
             if (heartbeat_ret != 0)
             {
                 robotraconteurlite_clear_event(event);
+                event->node = node;
                 node->events_serviced++;
                 event->event_type = (heartbeat_ret == 1) ? ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT
                                                          : ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT;
@@ -220,12 +228,13 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
 
     (void)memset(event, 0, sizeof(struct robotraconteurlite_event));
     event->event_type = ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE;
+    event->node = node;
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_status robotraconteurlite_node_consume_event(struct robotraconteurlite_node* node,
-                                                                struct robotraconteurlite_event* event)
+robotraconteurlite_status robotraconteurlite_node_consume_event(struct robotraconteurlite_event* event)
 {
+    struct robotraconteurlite_node* node = event->node;
     switch (event->event_type)
     {
     case ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE: {
@@ -269,7 +278,7 @@ robotraconteurlite_status robotraconteurlite_node_consume_event(struct robotraco
 }
 
 static robotraconteurlite_status robotraconteurlite_node_event_special_request_handle_error(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event, int err)
+    struct robotraconteurlite_event* event, int err)
 {
     if (err == ROBOTRACONTEURLITE_ERROR_RETRY)
     {
@@ -277,12 +286,11 @@ static robotraconteurlite_status robotraconteurlite_node_event_special_request_h
     }
     robotraconteurlite_connection_error(event->connection);
     /* Consume event */
-    (void)robotraconteurlite_node_consume_event(node, event);
+    (void)robotraconteurlite_node_consume_event(event);
     return ROBOTRACONTEURLITE_ERROR_CONSUMED;
 }
 
-robotraconteurlite_status robotraconteurlite_node_event_special_request(struct robotraconteurlite_node* node,
-                                                                        struct robotraconteurlite_event* event)
+robotraconteurlite_status robotraconteurlite_node_event_special_request(struct robotraconteurlite_event* event)
 {
     if (event->received_message.received_message_entry_header.entry_type > 500U)
     {
@@ -293,7 +301,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
     {
         robotraconteurlite_connection_error(event->connection);
         /* Consume event */
-        (void)robotraconteurlite_node_consume_event(node, event);
+        (void)robotraconteurlite_node_consume_event(event);
         return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
 
@@ -328,10 +336,10 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
             if (caps_flags == 0U)
             {
                 rv = robotraconteurlite_node_send_messageentry_empty_response(
-                    node, event->connection, &event->received_message.received_message_entry_header);
+                    event->node, event->connection, &event->received_message.received_message_entry_header);
                 if (FAILED(rv))
                 {
-                    return robotraconteurlite_node_event_special_request_handle_error(node, event, rv);
+                    return robotraconteurlite_node_event_special_request_handle_error(event, rv);
                 }
             }
             else
@@ -343,20 +351,20 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
                     &send_data, &event->received_message.received_message_entry_header);
                 if (FAILED(rv))
                 {
-                    return robotraconteurlite_node_event_special_request_handle_error(node, event, rv);
+                    return robotraconteurlite_node_event_special_request_handle_error(event, rv);
                 }
 
                 rv = robotraconteurlite_node_transport_populate_capabilities(&send_data.element_writer, caps_flags);
                 if (FAILED(rv))
                 {
                     return robotraconteurlite_node_event_special_request_handle_error(
-                        node, event, ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR);
+                        event, ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR);
                 }
 
                 rv = robotraconteurlite_node_end_send_messageentry(&send_data);
                 if (FAILED(rv))
                 {
-                    return robotraconteurlite_node_event_special_request_handle_error(node, event, rv);
+                    return robotraconteurlite_node_event_special_request_handle_error(event, rv);
                 }
             }
 
@@ -364,7 +372,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
             FLAGS_SET(event->connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_ESTABLISHED);
 
             /* Consume event */
-            (void)robotraconteurlite_node_consume_event(node, event);
+            (void)robotraconteurlite_node_consume_event(event);
             return ROBOTRACONTEURLITE_ERROR_CONSUMED;
         }
         else
@@ -388,10 +396,10 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
         event->connection->remote_endpoint = event->received_message.received_message_header.sender_endpoint;
 
         rv = robotraconteurlite_node_send_messageentry_empty_response(
-            node, event->connection, &event->received_message.received_message_entry_header);
+            event->node, event->connection, &event->received_message.received_message_entry_header);
         if (FAILED(rv))
         {
-            return robotraconteurlite_node_event_special_request_handle_error(node, event, rv);
+            return robotraconteurlite_node_event_special_request_handle_error(event, rv);
         }
 
         /* Set the CLIENT_ESTABLISHED flag */
@@ -405,7 +413,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
         }
 
         /* Consume event */
-        (void)robotraconteurlite_node_consume_event(node, event);
+        (void)robotraconteurlite_node_consume_event(event);
         return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CONNECTIONTEST:
@@ -414,19 +422,19 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
         robotraconteurlite_status rv = -1;
         if (!robotraconteurlite_connection_is_server(event->connection))
         {
-            (void)robotraconteurlite_node_consume_event(node, event);
+            (void)robotraconteurlite_node_consume_event(event);
             break;
         }
         /* TODO: handle disconnect client */
         rv = robotraconteurlite_node_send_messageentry_empty_response(
-            node, event->connection, &event->received_message.received_message_entry_header);
+            event->node, event->connection, &event->received_message.received_message_entry_header);
         if (FAILED(rv))
         {
-            return robotraconteurlite_node_event_special_request_handle_error(node, event, rv);
+            return robotraconteurlite_node_event_special_request_handle_error(event, rv);
         }
 
         /* Consume event */
-        (void)robotraconteurlite_node_consume_event(node, event);
+        (void)robotraconteurlite_node_consume_event(event);
         return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
 
@@ -487,7 +495,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CONNECTIONTESTRET: {
         /* Consume the return, handled by the connection */
-        (void)robotraconteurlite_node_consume_event(node, event);
+        (void)robotraconteurlite_node_consume_event(event);
         return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
 
@@ -499,14 +507,14 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
     if ((event->received_message.received_message_entry_header.entry_type % 2U) == 1U)
     {
         robotraconteurlite_status rv = robotraconteurlite_connection_send_messageentry_error_response(
-            node, event->connection, &event->received_message.received_message_entry_header,
+            event->node, event->connection, &event->received_message.received_message_entry_header,
             ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION, "RobotRaconteur.InvalidOperation", "Invalid operation");
         if (RETRY(rv))
         {
             return ROBOTRACONTEURLITE_ERROR_RETRY;
         }
         /* Consume event */
-        (void)robotraconteurlite_node_consume_event(node, event);
+        (void)robotraconteurlite_node_consume_event(event);
         return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
     else
@@ -1312,21 +1320,19 @@ static robotraconteurlite_status robotraconteurlite_node_event_special_request_s
 
 static robotraconteurlite_status
 robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event)
+    struct robotraconteurlite_event* event)
 {
     /* Return ServiceNotFound error message */
     return robotraconteurlite_connection_send_messageentry_error_response(
-        node, event->connection, &event->received_message.received_message_entry_header,
+        event->node, event->connection, &event->received_message.received_message_entry_header,
         ROBOTRACONTEURLITE_MESSAGEERRORTYPE_SERVICENOTFOUND, "RobotRaconteur.ServiceNotFound", "Service not found");
 }
 
 robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service* services_head,
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head,
     struct robotraconteurlite_node_service_definition* service_defs_head)
 {
 
-    assert(node);
     assert(event);
     assert(event->received_message.received_message_entry_header.entry_type ==
            ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETSERVICEDESC);
@@ -1345,8 +1351,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
         {
             if (rv != ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND)
             {
-                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
-                                                                                                                event);
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
             }
         }
 
@@ -1357,8 +1362,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
         {
             if (rv != ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND)
             {
-                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
-                                                                                                                event);
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
             }
         }
 
@@ -1372,15 +1376,13 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
             rv = robotraconteurlite_messageelement_reader_read_data_string(&element_reader, &servicetype_str);
             if (FAILED(rv))
             {
-                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
-                                                                                                                event);
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
             }
 
             def = robotraconteurlite_node_find_service_definition(service_defs_head, &servicetype_str);
             if (def == NULL)
             {
-                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node,
-                                                                                                                event);
+                return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
             }
 
             return robotraconteurlite_node_event_special_request_service_definition_reply_service_def(
@@ -1407,15 +1409,13 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
 
     /* TODO: handle clientversion field? */
 
-    return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(node, event);
+    return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
 }
 
 robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service_object* service_objects_head)
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_service_object* service_objects_head)
 {
     robotraconteurlite_size_t i = 0;
-    assert(node);
     assert(event);
     assert(event->received_message.received_message_entry_header.entry_type ==
            ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME);
@@ -1468,13 +1468,12 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
 
     /* Return ObjectNotFound error message */
     return robotraconteurlite_connection_send_messageentry_error_response(
-        node, event->connection, &event->received_message.received_message_entry_header,
+        event->node, event->connection, &event->received_message.received_message_entry_header,
         ROBOTRACONTEURLITE_MESSAGEERRORTYPE_OBJECTNOTFOUND, "RobotRaconteur.ObjectNotFound", "Object not found");
 }
 
 robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name2(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
-    struct robotraconteurlite_node_service* services_head)
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head)
 {
     struct robotraconteurlite_node_service* obj;
     robotraconteurlite_status rv = -1;
@@ -1483,12 +1482,12 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
         services_head, &event->received_message.received_message_entry_header.service_path);
     if (obj != NULL)
     {
-        return robotraconteurlite_node_event_special_request_object_type_name(node, event, &obj->service_objects_head);
+        return robotraconteurlite_node_event_special_request_object_type_name(event, &obj->service_objects_head);
     }
 
     /* Return ObjectNotFound error message */
     return robotraconteurlite_connection_send_messageentry_error_response(
-        node, event->connection, &event->received_message.received_message_entry_header,
+        event->node, event->connection, &event->received_message.received_message_entry_header,
         ROBOTRACONTEURLITE_MESSAGEERRORTYPE_OBJECTNOTFOUND, "RobotRaconteur.ObjectNotFound", "Object not found");
 }
 
@@ -1577,7 +1576,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
 
     if (event->event_type != ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE)
     {
-        rv = robotraconteurlite_node_event_special_request(handshake_data->node, event);
+        rv = robotraconteurlite_node_event_special_request(event);
         if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
         {
             return ROBOTRACONTEURLITE_ERROR_RETRY;
@@ -1612,7 +1611,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
             }*/
             /*robotraconteurlite_connection_consume_connected(event->connection);
             handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTED;*/
-            (void)robotraconteurlite_node_consume_event(handshake_data->node, event);
+            (void)robotraconteurlite_node_consume_event(event);
             break;
         }
         case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_SEND_COMPLETE: {
@@ -1621,7 +1620,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT:
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT:
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT: {
-                (void)robotraconteurlite_node_consume_event(handshake_data->node, event);
+                (void)robotraconteurlite_node_consume_event(event);
                 break;
             }
             default: {
@@ -1651,7 +1650,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
                 }
 
                 handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_COMPLETED;
-                (void)robotraconteurlite_node_consume_event(handshake_data->node, event);
+                (void)robotraconteurlite_node_consume_event(event);
                 break;
             }
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT: {
@@ -1682,7 +1681,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
                     return robotraconteurlite_client_handshake_error(handshake_data);
                 }
                 /* Consume event */
-                (void)robotraconteurlite_node_consume_event(handshake_data->node, event);
+                (void)robotraconteurlite_node_consume_event(event);
                 handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED;
                 break;
             }
@@ -1694,7 +1693,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
                     return robotraconteurlite_client_handshake_error(handshake_data);
                 }
                 handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED;
-                (void)robotraconteurlite_node_consume_event(handshake_data->node, event);
+                (void)robotraconteurlite_node_consume_event(event);
                 break;
             }
             default: {
@@ -1715,7 +1714,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
     else
     {
         /* Consume next cycle */
-        (void)robotraconteurlite_node_consume_event(handshake_data->node, event);
+        (void)robotraconteurlite_node_consume_event(event);
     }
 
     switch (handshake_data->handshake_state)
@@ -2019,3 +2018,14 @@ robotraconteurlite_status robotraconteurlite_node_transport_populate_capabilitie
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+robotraconteurlite_status robotraconteurlite_node_set_services(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_node_service* services_head,
+    struct robotraconteurlite_node_service_object* service_defs_head)
+{
+    assert(node != NULL);
+    node->services_head = services_head;
+    node->service_defs_head = service_defs_head;
+}
+#endif

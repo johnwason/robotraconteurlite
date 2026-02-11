@@ -365,7 +365,7 @@ int main(int argc, char* argv[])
                 return -1;
             }
 
-            rv = robotraconteurlite_node_event_special_request(&node, &event);
+            rv = robotraconteurlite_node_event_special_request(&event);
             if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
             {
                 continue;
@@ -459,40 +459,40 @@ int main(int argc, char* argv[])
                     break;
                 }
                 }
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 break;
             }
             case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_ERROR: {
                 robotraconteurlite_connection_close(event.connection);
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 break;
             }
             case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED: {
                 printf("Connection error\n");
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 return -1;
             }
             case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT: {
                 printf("Connection heartbeat timeout, sending heartbeat\n");
                 robotraconteurlite_client_send_heartbeat(&node, event.connection);
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 break;
             }
             case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT: {
                 printf("Connection timeout\n");
                 /* close connection */
                 robotraconteurlite_connection_close(event.connection);
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 break;
             }
             /* NOLINTNEXTLINE(bugprone-branch-clone) */
             case ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE: {
                 /* Loop will be broken after next_cycle */
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 break;
             }
             default: {
-                robotraconteurlite_node_consume_event(&node, &event);
+                robotraconteurlite_node_consume_event(&event);
                 break;
             }
             }

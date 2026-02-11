@@ -1084,7 +1084,10 @@ robotraconteurlite_status robotraconteurlite_tcp_connections_communicate(
                 rv = robotraconteurlite_tcp_connection_communicate(c1, now);
                 if (FAILED(rv))
                 {
-                    return rv;
+                    /* TODO: report error*/
+                    /*return rv;*/
+                    c = c->next;
+                    continue;
                 }
             }
 
@@ -1098,7 +1101,10 @@ robotraconteurlite_status robotraconteurlite_tcp_connections_communicate(
                 rv = robotraconteurlite_tcp_acceptor_communicate(c2, connections_head, now);
                 if (FAILED(rv))
                 {
-                    return rv;
+                    /* TODO: report error*/
+                    /*return rv;*/
+                    c = c->next;
+                    continue;
                 }
             }
         }

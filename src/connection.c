@@ -771,7 +771,10 @@ robotraconteurlite_status robotraconteurlite_connections_communicate(
                     c = c->next;
                     continue;
                 }
-                return rv;
+                /* TODO: report error*/
+                /*return rv;*/
+                c = c->next;
+                continue;
             }
         }
 
@@ -785,7 +788,10 @@ robotraconteurlite_status robotraconteurlite_connections_communicate(
                     c = c->next;
                     continue;
                 }
-                return rv;
+                /* TODO: report error*/
+                /*return rv;*/
+                c = c->next;
+                continue;
             }
         }
 
@@ -799,7 +805,10 @@ robotraconteurlite_status robotraconteurlite_connections_communicate(
                     c = c->next;
                     continue;
                 }
-                return rv;
+                /* TODO: report error*/
+                /*return rv;*/
+                c = c->next;
+                continue;
             }
         }
 

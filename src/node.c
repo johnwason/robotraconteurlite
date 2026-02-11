@@ -773,26 +773,26 @@ robotraconteurlite_status robotraconteurlite_node_split_qualified_type(
 {
     robotraconteurlite_size_t i = 0;
     assert(qualified_type);
-    if (qualified_type->len < 3 || qualified_type->data == NULL)
+    if ((qualified_type->len < 3U) || (qualified_type->data == NULL))
     {
         return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
     }
 
-    i = qualified_type->len - 1;
+    i = qualified_type->len - 1U;
 
     do
     {
         i--;
 
-        if (qualified_type->data[i] == '.')
+        if (qualified_type->data[i] == ((char)'.'))
         {
-            if (service_type)
+            if (service_type != NULL)
             {
                 service_type->data = qualified_type->data;
                 service_type->len = i;
             }
 
-            if (service_entry_type)
+            if (service_entry_type != NULL)
             {
                 i++;
                 service_type->data = &qualified_type->data[i];
@@ -801,7 +801,7 @@ robotraconteurlite_status robotraconteurlite_node_split_qualified_type(
             return ROBOTRACONTEURLITE_ERROR_SUCCESS;
         }
 
-    } while (i > 1);
+    } while (i > 1U);
 
     return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
 }
@@ -845,7 +845,7 @@ robotraconteurlite_status robotraconteurlite_node_service_definition_construct(
         }
     }
 
-    if (service_defs_head)
+    if (service_defs_head != NULL)
     {
         struct robotraconteurlite_node_service_definition* c = service_defs_head;
         while (c->next != NULL)
@@ -863,11 +863,11 @@ struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_
     struct robotraconteurlite_node_service_definition* service_defs_head,
     const struct robotraconteurlite_string* qualified_name_str)
 {
-    robotraconteurlite_u32 hash;
+    robotraconteurlite_u32 hash = 0;
     assert(service_defs_head != NULL);
     assert(qualified_name_str != NULL);
 
-    if ((qualified_name_str->len == 0) || (qualified_name_str->data == NULL))
+    if ((qualified_name_str->len == 0U) || (qualified_name_str->data == NULL))
     {
         return NULL;
     }
@@ -900,7 +900,7 @@ struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_
     rv = robotraconteurlite_node_split_qualified_type(qualified_entry_name_str, &qualified_name_str, NULL);
     if (FAILED(rv))
     {
-        NULL;
+        return NULL;
     }
 
     return robotraconteurlite_node_find_service_definition(service_defs_head, &qualified_name_str);
@@ -963,7 +963,7 @@ robotraconteurlite_status robotraconteurlite_node_service_object_construct(
         }
     }
 
-    if (service)
+    if (service != NULL)
     {
         struct robotraconteurlite_node_service_object* c = &service->service_objects_head;
         while (c->next != NULL)
@@ -1007,7 +1007,7 @@ robotraconteurlite_status robotraconteurlite_node_service_construct(
     }
 
     service->service_name_hash = robotraconteurlite_string_hash(service_name);
-    if (services_head)
+    if (services_head != NULL)
     {
         struct robotraconteurlite_node_service* c = services_head;
         while (c->next != NULL)
@@ -1037,7 +1037,7 @@ void robotraconteurlite_node_service_list_head_construct(struct robotraconteurli
 robotraconteurlite_status robotraconteurlite_node_service_set_root_object(
     struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object)
 {
-    if (service->service_objects_head.next != NULL || service->root_service_object != NULL)
+    if ((service->service_objects_head.next != NULL) || (service->root_service_object != NULL))
     {
         /* root service object must be set first */
         return ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION;
@@ -1059,14 +1059,14 @@ robotraconteurlite_status robotraconteurlite_node_service_set_root_object(
 robotraconteurlite_status robotraconteurlite_node_service_add_service_object(
     struct robotraconteurlite_node_service* service, struct robotraconteurlite_node_service_object* service_object)
 {
-    if (service->service_objects_head.next == NULL || service->root_service_object == NULL)
+    if ((service->service_objects_head.next == NULL) || (service->root_service_object == NULL))
     {
         /* root service object must be set first */
         return ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION;
     }
 
     if (robotraconteurlite_node_is_service_path_prefix(&service->service_name, &service_object->service_path).logical ==
-        0)
+        0U)
     {
         /* service object must have root service name in service path */
         return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
@@ -1124,7 +1124,7 @@ robotraconteurlite_status robotraconteurlite_node_service_remove_service_object(
     }
 
     service_object->prev->next = service_object->next;
-    if (service_object->next)
+    if (service_object->next != NULL)
     {
         service_object->next->prev = service_object->prev;
     }
@@ -1142,8 +1142,8 @@ struct robotraconteurlite_bool robotraconteurlite_node_is_service_path_prefix(
     assert(service_path != NULL);
     assert(path_prefix->data != NULL);
     assert(service_path->data != NULL);
-    assert(path_prefix->len > 0);
-    assert(service_path->len > 0);
+    assert(path_prefix->len > 0U);
+    assert(service_path->len > 0U);
 
     if (service_path->len < path_prefix->len)
     {
@@ -1152,12 +1152,12 @@ struct robotraconteurlite_bool robotraconteurlite_node_is_service_path_prefix(
 
     if (service_path->len == path_prefix->len)
     {
-        ret.logical = memcmp(service_path->data, path_prefix->data, path_prefix->len) == 0 ? 1 : 0;
+        ret.logical = (memcmp(service_path->data, path_prefix->data, path_prefix->len) == 0) ? 1 : 0;
         return ret;
     }
 
     ret.logical = ((memcmp(service_path->data, path_prefix->data, path_prefix->len) == 0) &&
-                   (service_path->data[path_prefix->len] == '.'))
+                   (service_path->data[path_prefix->len] == ((char)'.')))
                       ? 1
                       : 0;
     return ret;
@@ -1175,14 +1175,14 @@ struct robotraconteurlite_node_service* robotraconteurlite_node_find_service_for
     service_path_prefix.data = service_path->data;
     service_path_prefix.len = service_path->len;
 
-    if ((service_path->len == 0) || (service_path->data == NULL))
+    if ((service_path->len == 0U) || (service_path->data == NULL))
     {
         return NULL;
     }
 
     while (l < service_path->len)
     {
-        if (service_path->data[l] == '.')
+        if (service_path->data[l] == ((char)'.'))
         {
             break;
         }
@@ -1216,11 +1216,11 @@ struct robotraconteurlite_node_service_object* robotraconteurlite_node_find_serv
     struct robotraconteurlite_node_service_object* service_objects_head,
     const struct robotraconteurlite_string* service_path)
 {
-    robotraconteurlite_u32 hash;
+    robotraconteurlite_u32 hash = 0;
     assert(service_objects_head != NULL);
     assert(service_path != NULL);
 
-    if ((service_path->len == 0) || (service_path->data == NULL))
+    if ((service_path->len == 0U) || (service_path->data == NULL))
     {
         return NULL;
     }
@@ -1251,7 +1251,7 @@ static robotraconteurlite_status robotraconteurlite_node_event_special_request_s
 
     assert(event);
     assert(service_def_str);
-    assert(service_def_str->data > 0);
+    assert(service_def_str->len > 0U);
     assert(service_def_str->data);
 
     send_data.node = event->received_message.node;
@@ -1326,8 +1326,8 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
     struct robotraconteurlite_node_service_definition* service_defs_head)
 {
 
-    assert(node);
-    assert(event);
+    assert(node != NULL);
+    assert(event != NULL);
     assert(event->received_message.received_message_entry_header.entry_type ==
            ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETSERVICEDESC);
     assert(services_head != NULL);
@@ -1366,7 +1366,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
         {
             char servicetype_storage[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
             struct robotraconteurlite_string servicetype_str;
-            struct robotraconteurlite_node_service_definition* def;
+            struct robotraconteurlite_node_service_definition* def = NULL;
             servicetype_str.data = servicetype_storage;
             servicetype_str.len = sizeof(servicetype_storage);
             rv = robotraconteurlite_messageelement_reader_read_data_string(&element_reader, &servicetype_str);
@@ -1389,12 +1389,12 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
     }
 
     {
-        struct robotraconteurlite_node_service* srv;
+        struct robotraconteurlite_node_service* srv = NULL;
         srv = robotraconteurlite_node_find_service_for_path(
             services_head, &event->received_message.received_message_entry_header.service_path);
         if (srv != NULL)
         {
-            struct robotraconteurlite_node_service_definition* def;
+            struct robotraconteurlite_node_service_definition* def = NULL;
             def = robotraconteurlite_node_find_service_definition_for_entry(service_defs_head,
                                                                             &srv->root_service_object->qualified_type);
             if (def != NULL)
@@ -1414,15 +1414,14 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
     struct robotraconteurlite_node_service_object* service_objects_head)
 {
-    robotraconteurlite_size_t i = 0;
+    struct robotraconteurlite_node_service_object* service_object = NULL;
     assert(node);
     assert(event);
     assert(event->received_message.received_message_entry_header.entry_type ==
            ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME);
 
-    struct robotraconteurlite_node_service_object* service_object =
-        robotraconteurlite_node_find_service_object_for_path(
-            service_objects_head, &event->received_message.received_message_entry_header.service_path);
+    service_object = robotraconteurlite_node_find_service_object_for_path(
+        service_objects_head, &event->received_message.received_message_entry_header.service_path);
 
     if (service_object != NULL)
     {
@@ -1476,8 +1475,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
     struct robotraconteurlite_node* node, struct robotraconteurlite_event* event,
     struct robotraconteurlite_node_service* services_head)
 {
-    struct robotraconteurlite_node_service* obj;
-    robotraconteurlite_status rv = -1;
+    struct robotraconteurlite_node_service* obj = NULL;
 
     obj = robotraconteurlite_node_find_service_for_path(
         services_head, &event->received_message.received_message_entry_header.service_path);

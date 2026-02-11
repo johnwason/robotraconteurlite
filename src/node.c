@@ -715,6 +715,9 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry(
     struct robotraconteurlite_message_reader message_reader;
     struct robotraconteurlite_message_header message_header_temp;
     struct robotraconteurlite_messageentry_header messageentry_header_temp;
+    (void)memset(&message_reader, 0, sizeof(struct robotraconteurlite_message_reader));
+    (void)memset(&message_header_temp, 0, sizeof(struct robotraconteurlite_message_header));
+    (void)memset(&messageentry_header_temp, 0, sizeof(struct robotraconteurlite_messageentry_header));
     receive_data->buffer_storage.data = NULL;
     receive_data->buffer_storage.len = 0;
     receive_data->buffer_vec_storage.buffer_vec = &receive_data->buffer_storage;

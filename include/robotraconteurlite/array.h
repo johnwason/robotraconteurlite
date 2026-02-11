@@ -78,6 +78,20 @@ struct robotraconteurlite_string_vec
     struct robotraconteurlite_array_storage _scalar_storage;
 };
 
+struct robotraconteurlite_const_string
+{
+    const char* data;
+    robotraconteurlite_size_t len;
+};
+
+struct robotraconteurlite_const_string_vec
+{
+    struct robotraconteurlite_const_string* string_vec;
+    robotraconteurlite_size_t string_vec_cnt;
+
+    struct robotraconteurlite_array_storage _scalar_storage;
+};
+
 struct robotraconteurlite_array_double
 {
     robotraconteurlite_double* data;
@@ -557,13 +571,16 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_buffer_vec_c
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_buffer_vec_copy_from_string(
     struct robotraconteurlite_buffer_vec* dest_buf, robotraconteurlite_size_t dest_buf_pos,
-    const struct robotraconteurlite_string* source, robotraconteurlite_size_t source_pos,
+    const struct robotraconteurlite_const_string* source, robotraconteurlite_size_t source_pos,
     robotraconteurlite_size_t source_count);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_string_cmp(
-    const struct robotraconteurlite_string* str1, const struct robotraconteurlite_string* str2);
+    const struct robotraconteurlite_const_string* str1, const struct robotraconteurlite_const_string* str2);
 
-static int robotraconteurlite_string_cmp_c_str(const struct robotraconteurlite_string* str1, const char* str2)
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_string_cmp_mutable(
+    const struct robotraconteurlite_string* str1, const struct robotraconteurlite_const_string* str2);
+
+static int robotraconteurlite_string_cmp_c_str(const struct robotraconteurlite_const_string* str1, const char* str2)
 {
     robotraconteurlite_size_t strlen_str2 = strlen(str2);
     if ((strlen_str2 == 0U) && (str1->len == 0U))
@@ -597,15 +614,22 @@ static int robotraconteurlite_string_cmp_c_str(const struct robotraconteurlite_s
 }
 
 ROBOTRACONTEURLITE_API robotraconteurlite_u32
-robotraconteurlite_string_hash(const struct robotraconteurlite_string* str);
+robotraconteurlite_string_hash(const struct robotraconteurlite_const_string* str);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_string_copy_to(
-    const struct robotraconteurlite_string* source, struct robotraconteurlite_string* dest);
+    const struct robotraconteurlite_const_string* source, struct robotraconteurlite_string* dest);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_string_copy_to_buffer_storage(
+    const struct robotraconteurlite_const_string* source, struct robotraconteurlite_const_string* dest,
+    char* buffer_storage, robotraconteurlite_size_t buffer_storage_len);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_string_shallow_copy_to(
-    const struct robotraconteurlite_string* source, struct robotraconteurlite_string* dest);
+    const struct robotraconteurlite_const_string* source, struct robotraconteurlite_const_string* dest);
 
-static void robotraconteurlite_string_from_c_str(const char* source, struct robotraconteurlite_string* dest)
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_string_shallow_copy_from_mutable(
+    const struct robotraconteurlite_string* source, struct robotraconteurlite_const_string* dest);
+
+static void robotraconteurlite_string_from_c_str(const char* source, struct robotraconteurlite_const_string* dest)
 {
     if (source == NULL)
     {
@@ -613,9 +637,8 @@ static void robotraconteurlite_string_from_c_str(const char* source, struct robo
         dest->len = 0;
         return;
     }
-    /* TODO: Fix misra warning */
-    /* cppcheck-suppress misra-c2012-11.8 */
-    dest->data = (char*)source;
+
+    dest->data = source;
     dest->len = strlen(source);
 }
 

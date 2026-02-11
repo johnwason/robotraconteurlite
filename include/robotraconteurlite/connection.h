@@ -168,9 +168,9 @@ struct robotraconteurlite_connection
     robotraconteurlite_u32 remote_endpoint;
     struct robotraconteurlite_nodeid remote_nodeid;
     char remote_nodename_char[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
-    struct robotraconteurlite_string remote_nodename;
+    struct robotraconteurlite_const_string remote_nodename;
     char remote_service_name_char[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
-    struct robotraconteurlite_string remote_service_name;
+    struct robotraconteurlite_const_string remote_service_name;
     robotraconteurlite_timespec last_recv_message_time;
     robotraconteurlite_timespec last_send_message_time;
     robotraconteurlite_u32 last_request_id;
@@ -213,11 +213,11 @@ struct robotraconteurlite_addr
     robotraconteurlite_u32 transport_type;
     struct robotraconteurlite_sockaddr_storage socket_addr;
     struct robotraconteurlite_nodeid nodeid;
-    struct robotraconteurlite_string nodename;
-    struct robotraconteurlite_string service_name;
+    struct robotraconteurlite_const_string nodename;
+    struct robotraconteurlite_const_string service_name;
     robotraconteurlite_u32 flags;
-    struct robotraconteurlite_string http_host;
-    struct robotraconteurlite_string http_path;
+    struct robotraconteurlite_const_string http_host;
+    struct robotraconteurlite_const_string http_path;
 };
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status

@@ -93,7 +93,7 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
         {
             robotraconteurlite_double d1 = 1.234;
             struct robotraconteurlite_node_send_messageentry_data send_data;
-            struct robotraconteurlite_string element_name;
+            struct robotraconteurlite_const_string element_name;
             robotraconteurlite_status rv = -1;
             send_data.node = event->node;
             send_data.connection = event->connection;
@@ -147,7 +147,7 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
         {
             /* Find "value" message element */
 
-            struct robotraconteurlite_string element_name;
+            struct robotraconteurlite_const_string element_name;
             struct robotraconteurlite_messageelement_reader element_reader;
             robotraconteurlite_status rv = -1;
             robotraconteurlite_double d1 = 0.0;
@@ -354,7 +354,7 @@ int main(int argc, char* argv[])
     struct robotraconteurlite_node node;
     struct sockaddr_in listen_addr;
     struct robotraconteurlite_nodeid node_id;
-    struct robotraconteurlite_string node_name;
+    struct robotraconteurlite_const_string node_name;
     struct robotraconteurlite_clock clock;
     robotraconteurlite_timespec now = 0;
     const char* nodeid_str = default_nodeid_str;
@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
 
     /* Load the nodeid from string */
     {
-        struct robotraconteurlite_string nodeid_str_s;
+        struct robotraconteurlite_const_string nodeid_str_s;
         robotraconteurlite_string_from_c_str(nodeid_str, &nodeid_str_s);
         if (RRLITE_FAILED(robotraconteurlite_nodeid_parse(&nodeid_str_s, &node_id)))
         {

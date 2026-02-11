@@ -318,13 +318,13 @@ void robotraconteurlite_buffer_copy_to_double_test(void** state)
 void robotraconteurlite_string_test(void** state)
 {
     char str1_data[] = "01234";
-    struct robotraconteurlite_string str1;
+    struct robotraconteurlite_const_string str1;
     char str2_data[] = "012345";
-    struct robotraconteurlite_string str2;
+    struct robotraconteurlite_const_string str2;
     char str3_data[] = "01334";
-    struct robotraconteurlite_string str3;
+    struct robotraconteurlite_const_string str3;
     char str4_data[] = "01234";
-    struct robotraconteurlite_string str4;
+    struct robotraconteurlite_const_string str4;
 
     ROBOTRACONTEURLITE_UNUSED(state);
 

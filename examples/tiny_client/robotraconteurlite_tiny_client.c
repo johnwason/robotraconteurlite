@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
     struct robotraconteurlite_clock rr_clock;
     robotraconteurlite_status rv = -1;
     struct robotraconteurlite_event event;
-    struct robotraconteurlite_string nodename_str;
+    struct robotraconteurlite_const_string nodename_str;
     robotraconteurlite_u64 end_time = 0;
     enum tiny_client_state state = TINY_CLIENT_STATE_INIT;
     struct robotraconteurlite_node_send_messageentry_data request_data;
@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
             break;
         }
         case TINY_CLIENT_STATE_GET_D1_RECEIVED: {
-            struct robotraconteurlite_string element_name;
+            struct robotraconteurlite_const_string element_name;
             (void)memset(&request_data, 0, sizeof(request_data));
             printf("Sending set_d1\n");
             request_data.node = &node;
@@ -389,7 +389,7 @@ int main(int argc, char* argv[])
                     {
                     case ROBOTRACONTEURLITE_ERROR_SUCCESS: {
                         struct robotraconteurlite_messageelement_reader reader;
-                        struct robotraconteurlite_string element_name;
+                        struct robotraconteurlite_const_string element_name;
                         robotraconteurlite_double d1_val = 0.0;
 
                         printf("Received get_d1 response\n");

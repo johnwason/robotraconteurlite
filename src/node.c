@@ -31,7 +31,7 @@
 
 robotraconteurlite_status robotraconteurlite_node_init(struct robotraconteurlite_node* node,
                                                        struct robotraconteurlite_nodeid* nodeid,
-                                                       struct robotraconteurlite_string* nodename,
+                                                       struct robotraconteurlite_const_string* nodename,
                                                        struct robotraconteurlite_connection_object* connections_head)
 {
     (void)memset(node, 0, sizeof(struct robotraconteurlite_node));
@@ -40,9 +40,8 @@ robotraconteurlite_status robotraconteurlite_node_init(struct robotraconteurlite
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
     assert(nodename->len < sizeof(node->nodename_char));
-    node->nodename.data = node->nodename_char;
-    node->nodename.len = sizeof(node->nodename_char);
-    if (robotraconteurlite_string_copy_to(nodename, &node->nodename) != 0)
+    if (robotraconteurlite_string_copy_to_buffer_storage(nodename, &node->nodename, node->nodename_char,
+                                                         sizeof(node->nodename_char)) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
@@ -531,7 +530,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
 
 robotraconteurlite_status robotraconteurlite_node_verify_incoming_message(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
-    struct robotraconteurlite_message_header* message_header)
+    struct robotraconteurlite_message_const_header* message_header)
 {
     ROBOTRACONTEURLITE_UNUSED(node);
     ROBOTRACONTEURLITE_UNUSED(connection);
@@ -556,7 +555,7 @@ robotraconteurlite_status robotraconteurlite_node_begin_send_messageentry(
         return rv;
     }
 
-    (void)memset(&send_data->message_header, 0, sizeof(struct robotraconteurlite_message_header));
+    (void)memset(&send_data->message_header, 0, sizeof(struct robotraconteurlite_message_const_header));
     send_data->message_header.message_version = 2;
     if (robotraconteurlite_nodeid_copy_to(&send_data->node->nodeid, &send_data->message_header.sender_nodeid) != 0)
     {
@@ -624,14 +623,14 @@ robotraconteurlite_status robotraconteurlite_node_abort_send_messageentry(
 
 robotraconteurlite_status robotraconteurlite_node_send_messageentry_empty_response(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
-    struct robotraconteurlite_messageentry_header* request_message_entry_header)
+    struct robotraconteurlite_messageentry_const_header* request_message_entry_header)
 {
     struct robotraconteurlite_node_send_messageentry_data send_data;
-    struct robotraconteurlite_messageentry_header send_message_header;
+    struct robotraconteurlite_messageentry_const_header send_message_header;
     robotraconteurlite_status rv = -1;
     (void)memset(&send_data, 0, sizeof(struct robotraconteurlite_node_send_messageentry_data));
     (void)memcpy(&send_message_header, request_message_entry_header,
-                 sizeof(struct robotraconteurlite_messageentry_header));
+                 sizeof(struct robotraconteurlite_messageentry_const_header));
     send_message_header.entry_type++;
     send_data.node = node;
     send_data.connection = connection;
@@ -653,11 +652,11 @@ robotraconteurlite_status robotraconteurlite_node_send_messageentry_empty_respon
 
 robotraconteurlite_status robotraconteurlite_node_begin_send_messageentry_response(
     struct robotraconteurlite_node_send_messageentry_data* send_data,
-    struct robotraconteurlite_messageentry_header* request_message_entry_header)
+    struct robotraconteurlite_messageentry_const_header* request_message_entry_header)
 {
     robotraconteurlite_status rv = -1;
     (void)memcpy(&send_data->message_entry_header_storage, request_message_entry_header,
-                 sizeof(struct robotraconteurlite_messageentry_header));
+                 sizeof(struct robotraconteurlite_messageentry_const_header));
     send_data->message_entry_header_storage.entry_type++;
     send_data->message_entry_header = &send_data->message_entry_header_storage;
     rv = robotraconteurlite_node_begin_send_messageentry(send_data);
@@ -666,14 +665,14 @@ robotraconteurlite_status robotraconteurlite_node_begin_send_messageentry_respon
 
 robotraconteurlite_status robotraconteurlite_connection_send_messageentry_error_response(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
-    struct robotraconteurlite_messageentry_header* request_message_entry_header, robotraconteurlite_u16 error_code,
-    const char* error_name, const char* error_message)
+    struct robotraconteurlite_messageentry_const_header* request_message_entry_header,
+    robotraconteurlite_u16 error_code, const char* error_name, const char* error_message)
 {
     struct robotraconteurlite_node_send_messageentry_data send_data;
-    struct robotraconteurlite_messageentry_header send_message_entry_header;
+    struct robotraconteurlite_messageentry_const_header send_message_entry_header;
     robotraconteurlite_status rv = -1;
     (void)memcpy(&send_message_entry_header, request_message_entry_header,
-                 sizeof(struct robotraconteurlite_messageentry_header));
+                 sizeof(struct robotraconteurlite_messageentry_const_header));
     send_message_entry_header.entry_type++;
     send_message_entry_header.error = error_code;
     (void)memset(&send_data, 0, sizeof(struct robotraconteurlite_node_send_messageentry_data));
@@ -714,6 +713,8 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry(
 {
     robotraconteurlite_status rv = -1;
     struct robotraconteurlite_message_reader message_reader;
+    struct robotraconteurlite_message_header message_header_temp;
+    struct robotraconteurlite_messageentry_header messageentry_header_temp;
     receive_data->buffer_storage.data = NULL;
     receive_data->buffer_storage.len = 0;
     receive_data->buffer_vec_storage.buffer_vec = &receive_data->buffer_storage;
@@ -726,16 +727,19 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry(
     }
 
     /* Apply storage buffers for header strings */
-    receive_data->received_message_header.receiver_nodename.data = receive_data->receiver_nodename_char;
-    receive_data->received_message_header.receiver_nodename.len = sizeof(receive_data->receiver_nodename_char);
-    receive_data->received_message_header.sender_nodename.data = receive_data->sender_nodename_char;
-    receive_data->received_message_header.sender_nodename.len = sizeof(receive_data->sender_nodename_char);
+    message_header_temp.receiver_nodename.data = receive_data->receiver_nodename_char;
+    message_header_temp.receiver_nodename.len = sizeof(receive_data->receiver_nodename_char);
+    message_header_temp.sender_nodename.data = receive_data->sender_nodename_char;
+    message_header_temp.sender_nodename.len = sizeof(receive_data->sender_nodename_char);
 
-    rv = robotraconteurlite_message_reader_read_header(&message_reader, &receive_data->received_message_header);
+    rv = robotraconteurlite_message_reader_read_header(&message_reader, &message_header_temp);
     if (FAILED(rv))
     {
         return rv;
     }
+
+    robotraconteurlite_message_header_shallow_copy_from_mutable(&message_header_temp,
+                                                                &receive_data->received_message_header);
 
     rv = robotraconteurlite_node_verify_incoming_message(receive_data->node, receive_data->connection,
                                                          &receive_data->received_message_header);
@@ -752,19 +756,21 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry(
     }
 
     /* Apply storage buffer for entry header strings */
-    receive_data->received_message_entry_header.member_name.data = receive_data->member_name_char;
-    receive_data->received_message_entry_header.member_name.len = sizeof(receive_data->member_name_char);
-    receive_data->received_message_entry_header.service_path.data = receive_data->service_path_char;
-    receive_data->received_message_entry_header.service_path.len = sizeof(receive_data->service_path_char);
-    receive_data->received_message_entry_header.metadata.data = receive_data->extended_char;
-    receive_data->received_message_entry_header.metadata.len = sizeof(receive_data->extended_char);
+    messageentry_header_temp.member_name.data = receive_data->member_name_char;
+    messageentry_header_temp.member_name.len = sizeof(receive_data->member_name_char);
+    messageentry_header_temp.service_path.data = receive_data->service_path_char;
+    messageentry_header_temp.service_path.len = sizeof(receive_data->service_path_char);
+    messageentry_header_temp.metadata.data = receive_data->extended_char;
+    messageentry_header_temp.metadata.len = sizeof(receive_data->extended_char);
 
-    rv = robotraconteurlite_messageentry_reader_read_header(&receive_data->entry_reader,
-                                                            &receive_data->received_message_entry_header);
+    rv = robotraconteurlite_messageentry_reader_read_header(&receive_data->entry_reader, &messageentry_header_temp);
     if (FAILED(rv))
     {
         return rv;
     }
+
+    robotraconteurlite_messageentry_header_shallow_copy_from_mutable(&messageentry_header_temp,
+                                                                     &receive_data->received_message_entry_header);
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
@@ -776,8 +782,8 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry_consume(
 }
 
 robotraconteurlite_status robotraconteurlite_node_split_qualified_type(
-    const struct robotraconteurlite_string* qualified_type, struct robotraconteurlite_string* service_type,
-    struct robotraconteurlite_string* service_entry_type)
+    const struct robotraconteurlite_const_string* qualified_type, struct robotraconteurlite_const_string* service_type,
+    struct robotraconteurlite_const_string* service_entry_type)
 {
     robotraconteurlite_size_t i = 0;
     assert(qualified_type);
@@ -822,9 +828,9 @@ void robotraconteurlite_node_service_definition_list_head_construct(
 
 robotraconteurlite_status robotraconteurlite_node_service_definition_construct(
     struct robotraconteurlite_node_service_definition* service_def,
-    const struct robotraconteurlite_string* qualified_name_str,
-    const struct robotraconteurlite_string* service_definition_str,
-    const struct robotraconteurlite_string* imported_qualified_names_str,
+    const struct robotraconteurlite_const_string* qualified_name_str,
+    const struct robotraconteurlite_const_string* service_definition_str,
+    const struct robotraconteurlite_const_string* imported_qualified_names_str,
     struct robotraconteurlite_node_service_definition* service_defs_head)
 {
     robotraconteurlite_status rv = -1;
@@ -869,7 +875,7 @@ robotraconteurlite_status robotraconteurlite_node_service_definition_construct(
 
 struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_service_definition(
     struct robotraconteurlite_node_service_definition* service_defs_head,
-    const struct robotraconteurlite_string* qualified_name_str)
+    const struct robotraconteurlite_const_string* qualified_name_str)
 {
     robotraconteurlite_u32 hash = 0;
     assert(service_defs_head != NULL);
@@ -900,9 +906,9 @@ struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_
 
 struct robotraconteurlite_node_service_definition* robotraconteurlite_node_find_service_definition_for_entry(
     struct robotraconteurlite_node_service_definition* service_defs_head,
-    const struct robotraconteurlite_string* qualified_entry_name_str)
+    const struct robotraconteurlite_const_string* qualified_entry_name_str)
 {
-    struct robotraconteurlite_string qualified_name_str;
+    struct robotraconteurlite_const_string qualified_name_str;
     robotraconteurlite_status rv = -1;
 
     rv = robotraconteurlite_node_split_qualified_type(qualified_entry_name_str, &qualified_name_str, NULL);
@@ -919,9 +925,9 @@ robotraconteurlite_status robotraconteurlite_node_service_definition_construct_c
     const char* service_definition_str, const char* imported_qualified_names_str,
     struct robotraconteurlite_node_service_definition* service_defs_head)
 {
-    struct robotraconteurlite_string qualified_name_rrstr;
-    struct robotraconteurlite_string service_definition_rrstr;
-    struct robotraconteurlite_string imported_qualified_names_rrstr;
+    struct robotraconteurlite_const_string qualified_name_rrstr;
+    struct robotraconteurlite_const_string service_definition_rrstr;
+    struct robotraconteurlite_const_string imported_qualified_names_rrstr;
 
     robotraconteurlite_string_from_c_str(qualified_name_str, &qualified_name_rrstr);
     robotraconteurlite_string_from_c_str(service_definition_str, &service_definition_rrstr);
@@ -939,9 +945,10 @@ void robotraconteurlite_node_service_object_list_head_construct(
 }
 
 robotraconteurlite_status robotraconteurlite_node_service_object_construct(
-    struct robotraconteurlite_node_service_object* service_object, const struct robotraconteurlite_string* service_path,
-    const struct robotraconteurlite_string* qualified_type,
-    const struct robotraconteurlite_string* implemented_qualified_types,
+    struct robotraconteurlite_node_service_object* service_object,
+    const struct robotraconteurlite_const_string* service_path,
+    const struct robotraconteurlite_const_string* qualified_type,
+    const struct robotraconteurlite_const_string* implemented_qualified_types,
     struct robotraconteurlite_node_service* service)
 {
     robotraconteurlite_status rv = -1;
@@ -989,9 +996,9 @@ robotraconteurlite_status robotraconteurlite_node_service_object_construct_c_str
     struct robotraconteurlite_node_service_object* service_object, const char* service_path, const char* qualified_type,
     const char* implemented_qualified_types, struct robotraconteurlite_node_service* service)
 {
-    struct robotraconteurlite_string service_path_str;
-    struct robotraconteurlite_string qualified_type_str;
-    struct robotraconteurlite_string implemented_qualified_types_str;
+    struct robotraconteurlite_const_string service_path_str;
+    struct robotraconteurlite_const_string qualified_type_str;
+    struct robotraconteurlite_const_string implemented_qualified_types_str;
 
     robotraconteurlite_string_from_c_str(service_path, &service_path_str);
     robotraconteurlite_string_from_c_str(qualified_type, &qualified_type_str);
@@ -1002,7 +1009,7 @@ robotraconteurlite_status robotraconteurlite_node_service_object_construct_c_str
 }
 
 robotraconteurlite_status robotraconteurlite_node_service_construct(
-    struct robotraconteurlite_node_service* service, const struct robotraconteurlite_string* service_name,
+    struct robotraconteurlite_node_service* service, const struct robotraconteurlite_const_string* service_name,
     struct robotraconteurlite_node_service* services_head)
 {
     robotraconteurlite_status rv = -1;
@@ -1032,7 +1039,7 @@ robotraconteurlite_status robotraconteurlite_node_service_construct_c_str(
     struct robotraconteurlite_node_service* service, const char* service_name,
     struct robotraconteurlite_node_service* services_head)
 {
-    struct robotraconteurlite_string service_name_str;
+    struct robotraconteurlite_const_string service_name_str;
     robotraconteurlite_string_from_c_str(service_name, &service_name_str);
     return robotraconteurlite_node_service_construct(service, &service_name_str, services_head);
 }
@@ -1141,7 +1148,8 @@ robotraconteurlite_status robotraconteurlite_node_service_remove_service_object(
 }
 
 struct robotraconteurlite_bool robotraconteurlite_node_is_service_path_prefix(
-    const struct robotraconteurlite_string* path_prefix, const struct robotraconteurlite_string* service_path)
+    const struct robotraconteurlite_const_string* path_prefix,
+    const struct robotraconteurlite_const_string* service_path)
 {
     struct robotraconteurlite_bool ret;
     ret.logical = 0;
@@ -1172,10 +1180,10 @@ struct robotraconteurlite_bool robotraconteurlite_node_is_service_path_prefix(
 }
 
 struct robotraconteurlite_node_service* robotraconteurlite_node_find_service_for_path(
-    struct robotraconteurlite_node_service* services_head, const struct robotraconteurlite_string* service_path)
+    struct robotraconteurlite_node_service* services_head, const struct robotraconteurlite_const_string* service_path)
 {
     robotraconteurlite_size_t l = 1;
-    struct robotraconteurlite_string service_path_prefix;
+    struct robotraconteurlite_const_string service_path_prefix;
     robotraconteurlite_u32 hash = 0;
     assert(services_head != NULL);
     assert(service_path != NULL);
@@ -1222,7 +1230,7 @@ struct robotraconteurlite_node_service* robotraconteurlite_node_find_service_for
 
 struct robotraconteurlite_node_service_object* robotraconteurlite_node_find_service_object_for_path(
     struct robotraconteurlite_node_service_object* service_objects_head,
-    const struct robotraconteurlite_string* service_path)
+    const struct robotraconteurlite_const_string* service_path)
 {
     robotraconteurlite_u32 hash = 0;
     assert(service_objects_head != NULL);
@@ -1251,7 +1259,7 @@ struct robotraconteurlite_node_service_object* robotraconteurlite_node_find_serv
 }
 
 static robotraconteurlite_status robotraconteurlite_node_event_special_request_service_definition_reply_service_def(
-    struct robotraconteurlite_event* event, const struct robotraconteurlite_string* service_def_str)
+    struct robotraconteurlite_event* event, const struct robotraconteurlite_const_string* service_def_str)
 {
     robotraconteurlite_status rv = -1;
     struct robotraconteurlite_node_send_messageentry_data send_data;
@@ -1275,11 +1283,8 @@ static robotraconteurlite_status robotraconteurlite_node_event_special_request_s
     }
     {
         /* Write service definition */
-        struct robotraconteurlite_string element_name_str;
-        /* TODO: Fix misra violation */
-        /* cppcheck-suppress misra-c2012-7.4 */
-        element_name_str.data = "servicedef";
-        element_name_str.len = 10;
+        struct robotraconteurlite_const_string element_name_str;
+        robotraconteurlite_string_from_c_str("servicedef", &element_name_str);
         rv = robotraconteurlite_messageelement_writer_write_data_string(&send_data.element_writer, &element_name_str,
                                                                         service_def_str);
         if (FAILED(rv))
@@ -1291,8 +1296,8 @@ static robotraconteurlite_status robotraconteurlite_node_event_special_request_s
         /* Write empty attributes */
         /* TODO: Support attributes */
         struct robotraconteurlite_messageelement_writer attr_element_writer;
-        struct robotraconteurlite_messageelement_header attr_element_header;
-        (void)memset(&attr_element_header, 0, sizeof(struct robotraconteurlite_messageelement_header));
+        struct robotraconteurlite_messageelement_const_header attr_element_header;
+        (void)memset(&attr_element_header, 0, sizeof(struct robotraconteurlite_messageelement_const_header));
         attr_element_header.element_type = ROBOTRACONTEURLITE_DATATYPE_MAP_STRING;
         robotraconteurlite_string_from_c_str("attributes", &attr_element_header.element_name);
         rv = robotraconteurlite_messageelement_writer_begin_nested_element(&send_data.element_writer,
@@ -1342,7 +1347,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
     {
         /* find if "servicetype" or "ServiceType" elements exist */
         robotraconteurlite_status rv = -1;
-        struct robotraconteurlite_string element_name;
+        struct robotraconteurlite_const_string element_name;
         struct robotraconteurlite_messageelement_reader element_reader;
         robotraconteurlite_string_from_c_str("servicetype", &element_name);
         rv = robotraconteurlite_messageentry_reader_find_element(&event->received_message.entry_reader, &element_name,
@@ -1370,6 +1375,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
         {
             char servicetype_storage[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
             struct robotraconteurlite_string servicetype_str;
+            struct robotraconteurlite_const_string servicetype_const_str;
             struct robotraconteurlite_node_service_definition* def = NULL;
             servicetype_str.data = servicetype_storage;
             servicetype_str.len = sizeof(servicetype_storage);
@@ -1379,7 +1385,8 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_service_
                 return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
             }
 
-            def = robotraconteurlite_node_find_service_definition(service_defs_head, &servicetype_str);
+            (void)robotraconteurlite_string_shallow_copy_from_mutable(&servicetype_str, &servicetype_const_str);
+            def = robotraconteurlite_node_find_service_definition(service_defs_head, &servicetype_const_str);
             if (def == NULL)
             {
                 return robotraconteurlite_node_event_special_request_service_definition_reply_service_not_found(event);
@@ -1441,13 +1448,10 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
         }
         {
             /* Write object type name */
-            struct robotraconteurlite_string element_name_str;
-            struct robotraconteurlite_string type_name_str;
+            struct robotraconteurlite_const_string element_name_str;
             robotraconteurlite_string_from_c_str("objecttype", &element_name_str);
-            type_name_str.data = service_object->qualified_type.data;
-            type_name_str.len = service_object->qualified_type.len;
-            rv = robotraconteurlite_messageelement_writer_write_data_string(&send_data.element_writer,
-                                                                            &element_name_str, &type_name_str);
+            rv = robotraconteurlite_messageelement_writer_write_data_string(
+                &send_data.element_writer, &element_name_str, &service_object->qualified_type);
             if (FAILED(rv))
             {
                 return rv;
@@ -1653,7 +1657,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
             }
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT: {
 
-                struct robotraconteurlite_string element_name;
+                struct robotraconteurlite_const_string element_name;
                 struct robotraconteurlite_messageelement_reader element_reader;
                 if (/*(event->received_message.received_message_entry_header.request_id != handshake_data->request_id)
                        || */
@@ -1823,7 +1827,7 @@ robotraconteurlite_status robotraconteurlite_client_begin_request(
     const char* membername, const char* servicepath)
 {
     send_data->message_entry_header = &send_data->message_entry_header_storage;
-    (void)memset(send_data->message_entry_header, 0, sizeof(struct robotraconteurlite_messageentry_header));
+    (void)memset(send_data->message_entry_header, 0, sizeof(struct robotraconteurlite_messageentry_const_header));
     send_data->message_entry_header->entry_type = entry_type;
     send_data->connection->last_request_id++;
     send_data->message_entry_header->request_id = send_data->connection->last_request_id;
@@ -1931,7 +1935,7 @@ robotraconteurlite_status robotraconteurlite_node_transport_parse_capabilities(
     struct robotraconteurlite_messageentry_reader* entry_reader, robotraconteurlite_u32* parsed_flags)
 {
     robotraconteurlite_status rv = ROBOTRACONTEURLITE_ERROR_SUCCESS;
-    struct robotraconteurlite_string capabilities_element_name_str;
+    struct robotraconteurlite_const_string capabilities_element_name_str;
     struct robotraconteurlite_messageelement_reader capabilities_element_reader;
     robotraconteurlite_string_from_c_str("capabilities", &capabilities_element_name_str);
 
@@ -2004,7 +2008,7 @@ robotraconteurlite_status robotraconteurlite_node_transport_populate_capabilitie
 
     if (caps_reply_len > 0U)
     {
-        struct robotraconteurlite_string capabilities_element_name_str;
+        struct robotraconteurlite_const_string capabilities_element_name_str;
         struct robotraconteurlite_array_uint32 capabilities_array;
         capabilities_array.data = caps_reply;
         capabilities_array.len = caps_reply_len;

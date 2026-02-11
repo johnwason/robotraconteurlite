@@ -54,7 +54,7 @@ robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_{{t
 /* {{type}} */
 robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}(
     struct robotraconteurlite_messageelement_writer* element_writer,
-    const struct robotraconteurlite_string* element_name, {{ctype}} value)
+    const struct robotraconteurlite_const_string* element_name, {{ctype}} value)
 {
     struct robotraconteurlite_array_{{type}} a;
     a.data = &value;
@@ -69,7 +69,7 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}
 
 robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_array(
     struct robotraconteurlite_messageelement_writer* element_writer,
-    const struct robotraconteurlite_string* element_name, const struct robotraconteurlite_array_{{type}}* value)
+    const struct robotraconteurlite_const_string* element_name, const struct robotraconteurlite_array_{{type}}* value)
 {
     return robotraconteurlite_messageelement_writer_write_raw(element_writer, element_name,
                                                                 {% if type in ("double","single") -%}
@@ -91,7 +91,7 @@ robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_str
 
 robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string(
     struct robotraconteurlite_messageelement_writer* element_writer,
-    const struct robotraconteurlite_string* element_name, const struct robotraconteurlite_string* value)
+    const struct robotraconteurlite_const_string* element_name, const struct robotraconteurlite_const_string* value)
 {
     return robotraconteurlite_messageelement_writer_write_raw(element_writer, element_name,
                                                               (const robotraconteurlite_byte*)value->data, value->len,

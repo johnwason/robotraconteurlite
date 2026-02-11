@@ -545,19 +545,18 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connection_i
     c->last_recv_message_time = now;
     c->last_send_message_time = now;
 
-    c->remote_nodename.data = c->remote_nodename_char;
-    c->remote_nodename.len = sizeof(c->remote_nodename_char);
-    c->remote_service_name.data = c->remote_service_name_char;
-    c->remote_service_name.len = sizeof(c->remote_service_name_char);
     if (robotraconteurlite_nodeid_copy_to(&addr->nodeid, &c->remote_nodeid) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
-    if (robotraconteurlite_string_copy_to(&addr->nodename, &c->remote_nodename) != 0)
+    if (robotraconteurlite_string_copy_to_buffer_storage(&addr->nodename, &c->remote_nodename, c->remote_nodename_char,
+                                                         sizeof(c->remote_nodename_char)) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
-    if (robotraconteurlite_string_copy_to(&addr->service_name, &c->remote_service_name) != 0)
+    if (robotraconteurlite_string_copy_to_buffer_storage(&addr->service_name, &c->remote_service_name,
+                                                         c->remote_service_name_char,
+                                                         sizeof(c->remote_service_name_char)) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }

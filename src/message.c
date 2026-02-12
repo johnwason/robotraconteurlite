@@ -1076,6 +1076,46 @@ robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_ve
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
+robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_c_str(
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageelement_reader* element_reader)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageentry_reader_find_element(entry_reader, &element_name_str, element_reader);
+}
+
+robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_verify_scalar_c_str(
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u16 expected_data_type)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageentry_reader_find_element_verify_scalar(entry_reader, &element_name_str,
+                                                                             element_reader, expected_data_type);
+}
+
+robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_verify_array_c_str(
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u16 expected_data_type,
+    robotraconteurlite_u32 expected_len, robotraconteurlite_u8 var_length)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageentry_reader_find_element_verify_array(
+        entry_reader, &element_name_str, element_reader, expected_data_type, expected_len, var_length);
+}
+
+robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_verify_string_c_str(
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u32 expected_max_len)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageentry_reader_find_element_verify_string(entry_reader, &element_name_str,
+                                                                             element_reader, expected_max_len);
+}
+
 robotraconteurlite_status robotraconteurlite_messageentry_reader_read_header(
     struct robotraconteurlite_messageentry_reader* entry_reader, struct robotraconteurlite_messageentry_header* header)
 {
@@ -2136,6 +2176,47 @@ robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_e
     }
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader)
+{
+    struct robotraconteurlite_const_string nested_element_name_str;
+    robotraconteurlite_string_from_c_str(nested_element_name, &nested_element_name_str);
+    return robotraconteurlite_messageelement_reader_find_nested_element(element_reader, &nested_element_name_str,
+                                                                        nested_element_reader);
+}
+
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_verify_scalar_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u16 expected_data_type)
+{
+    struct robotraconteurlite_const_string nested_element_name_str;
+    robotraconteurlite_string_from_c_str(nested_element_name, &nested_element_name_str);
+    return robotraconteurlite_messageelement_reader_find_nested_element_verify_scalar(
+        element_reader, &nested_element_name_str, nested_element_reader, expected_data_type);
+}
+
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_verify_array_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u16 expected_data_type,
+    robotraconteurlite_u32 expected_len, robotraconteurlite_u8 var_length)
+{
+    struct robotraconteurlite_const_string nested_element_name_str;
+    robotraconteurlite_string_from_c_str(nested_element_name, &nested_element_name_str);
+    return robotraconteurlite_messageelement_reader_find_nested_element_verify_array(
+        element_reader, &nested_element_name_str, nested_element_reader, expected_data_type, expected_len, var_length);
+}
+
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_verify_string_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u32 expected_max_len)
+{
+    struct robotraconteurlite_const_string nested_element_name_str;
+    robotraconteurlite_string_from_c_str(nested_element_name, &nested_element_name_str);
+    return robotraconteurlite_messageelement_reader_find_nested_element_verify_string(
+        element_reader, &nested_element_name_str, nested_element_reader, expected_max_len);
 }
 
 /* Message Writer */

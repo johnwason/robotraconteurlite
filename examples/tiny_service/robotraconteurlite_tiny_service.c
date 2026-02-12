@@ -51,54 +51,21 @@ const char* service_def_str = "service example.tiny_service\n\n"
 const char* service_def_qualified_name = "example.tiny_service";
 const char* root_object_type = "example.tiny_service.tiny_object";
 
-int handle_message(struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head,
-                   struct robotraconteurlite_node_service_definition* service_defs_head)
+robotraconteurlite_status tiny_object_handle_message(struct robotraconteurlite_node_service_event* s_evt)
 {
-    robotraconteurlite_status rv = robotraconteurlite_node_event_special_request(event);
-    if (RRLITE_FAILED(rv))
+    switch (s_evt->event->received_message.received_message_entry_header.entry_type)
     {
-        if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED || rv == ROBOTRACONTEURLITE_ERROR_RETRY)
-        {
-            return 0;
-        }
-        printf("Could not handle special request\n");
-        return -1;
-    }
-
-    switch (event->received_message.received_message_entry_header.entry_type)
-    {
-    case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETSERVICEDESC: {
-        return robotraconteurlite_node_event_special_request_service_definition(event, services_head,
-                                                                                service_defs_head);
-    }
-    case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME: {
-        return robotraconteurlite_node_event_special_request_object_type_name2(event, services_head);
-    }
-    case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CLIENTKEEPALIVEREQ: {
-        robotraconteurlite_status rv = robotraconteurlite_node_send_messageentry_empty_response(
-            event->node, event->connection, &event->received_message.received_message_entry_header);
-        if (RETRY(rv))
-        {
-            return ROBOTRACONTEURLITE_ERROR_RETRY;
-        }
-
-        return rv;
-    }
-    case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_SERVICEPATHRELEASEDREQ: {
-        /* Don't need to do anything. Consume and return */
-        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
-    }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ: {
-        if (robotraconteurlite_event_is_member(event, "tiny_service", "d1"))
+        if (robotraconteurlite_node_event_is_member(s_evt->event, "d1"))
         {
             robotraconteurlite_double d1 = 1.234;
             struct robotraconteurlite_node_send_messageentry_data send_data;
             struct robotraconteurlite_const_string element_name;
             robotraconteurlite_status rv = -1;
-            send_data.node = event->node;
-            send_data.connection = event->connection;
+            send_data.node = s_evt->event->node;
+            send_data.connection = s_evt->event->connection;
             rv = robotraconteurlite_node_begin_send_messageentry_response(
-                &send_data, &event->received_message.received_message_entry_header);
+                &send_data, &s_evt->event->received_message.received_message_entry_header);
             if (RETRY(rv))
             {
                 return ROBOTRACONTEURLITE_ERROR_RETRY;
@@ -123,27 +90,19 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
             if (RRLITE_FAILED(rv))
             {
                 printf("Could not end send message entry response\n");
-                return -1;
+                return rv;
             }
             return rv;
         }
         else
         {
-            if (robotraconteurlite_node_consume_event(event))
-            {
-                printf("Could not consume event\n");
-                return -1;
-            }
             printf("Unknown property get request, responding with error\n");
             /* Send error response */
-            return robotraconteurlite_connection_send_messageentry_error_response(
-                event->node, event->connection, &event->received_message.received_message_entry_header,
-                ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation",
-                "Invalid operation");
+            return robotraconteurlite_node_event_respond_member_not_found(s_evt->event);
         }
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ: {
-        if (robotraconteurlite_event_is_member(event, "tiny_service", "d1"))
+        if (robotraconteurlite_node_event_is_member(s_evt->event, "d1"))
         {
             /* Find "value" message element */
 
@@ -154,7 +113,7 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
             robotraconteurlite_string_from_c_str("value", &element_name);
 
             rv = robotraconteurlite_messageentry_reader_find_element_verify_scalar(
-                &event->received_message.entry_reader, &element_name, &element_reader,
+                &s_evt->event->received_message.entry_reader, &element_name, &element_reader,
                 ROBOTRACONTEURLITE_DATATYPE_DOUBLE);
 
             if (rv == ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND ||
@@ -162,27 +121,22 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
             {
                 printf("Could not find element or type mismatch\n");
                 /* Send error response */
-                return robotraconteurlite_connection_send_messageentry_error_response(
-                    event->node, event->connection, &event->received_message.received_message_entry_header,
-                    ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation",
-                    "Invalid operation");
+                return robotraconteurlite_node_event_respond_invalid_operation(s_evt->event);
             }
 
             if (robotraconteurlite_messageelement_reader_read_data_double(&element_reader, &d1))
             {
                 printf("Could not read double\n");
                 /* Send error response */
-                return robotraconteurlite_connection_send_messageentry_error_response(
-                    event->node, event->connection, &event->received_message.received_message_entry_header,
-                    ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation",
-                    "Invalid operation");
+                return robotraconteurlite_node_event_respond_invalid_operation(s_evt->event);
             }
 
             printf("Got set d1=%f\n", d1);
 
             /* Send empty response */
             rv = robotraconteurlite_node_send_messageentry_empty_response(
-                event->node, event->connection, &event->received_message.received_message_entry_header);
+                s_evt->event->node, s_evt->event->connection,
+                &s_evt->event->received_message.received_message_entry_header);
             if (RETRY(rv))
             {
                 return ROBOTRACONTEURLITE_ERROR_RETRY;
@@ -194,147 +148,59 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
             printf("Unknown property set request, responding with error\n");
 
             /* Send error response */
-            return robotraconteurlite_connection_send_messageentry_error_response(
-                event->node, event->connection, &event->received_message.received_message_entry_header,
-                ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation",
-                "Invalid operation");
+            return robotraconteurlite_node_event_respond_member_not_found(s_evt->event);
         }
     }
     default: {
         printf("Could not handle message, responding with error\n");
         /* Send error response */
-        return robotraconteurlite_connection_send_messageentry_error_response(
-            event->node, event->connection, &event->received_message.received_message_entry_header,
-            ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation",
-            "Invalid operation");
+        return robotraconteurlite_node_event_respond_member_not_found(s_evt->event);
     }
     }
 
-    return 0;
+    return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
 }
 
-int handle_event(struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head,
-                 struct robotraconteurlite_node_service_definition* service_defs_head)
+void tiny_service_service_client_event(struct robotraconteurlite_node_service_event* event,
+                                       enum robotraconteurlite_node_service_event_type event_type)
 {
-    switch (event->event_type)
+    switch (event_type)
     {
-    case ROBOTRACONTEURLITE_EVENT_TYPE_NOOP: {
-        printf("Noop event\n");
-        /* Consume the event */
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
+    case ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_CONNECTED:
+        printf("Client connected\n");
+        break;
+    case ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_DISCONNECTED:
+        printf("Client disconnected\n");
+        break;
+    default:
         break;
     }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE: {
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        /* End of cycle, exit loop */
-        return 1;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED: {
-        robotraconteurlite_status rv = -1;
-        printf("Message received\n");
-        /* Handle the message */
-        rv = handle_message(event, services_head, service_defs_head);
-        if (RETRY(rv))
-        {
-            return 0;
-        }
-        if (RRLITE_FAILED(rv))
-        {
-            printf("Could not handle message\n");
-            return -1;
-        }
-        /* Consume the event */
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_SEND_COMPLETE: {
-        printf("Message sent\n");
-        /* Consume the event */
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT: {
-        printf("Connection heartbeat timeout, sending heartbeat\n");
-        robotraconteurlite_client_send_heartbeat(event->node, event->connection);
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT: {
-        printf("Connection timed out\n");
-        /* Close the connection on timeout */
-        if (robotraconteurlite_connection_close(event->connection))
-        {
-            printf("Could not close connection\n");
-            return -1;
-        }
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_ERROR: {
-        /* Close the connection on error */
-        if (robotraconteurlite_connection_close(event->connection))
-        {
-            printf("Could not close connection\n");
-            return -1;
-        }
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CONNECTED: {
-        printf("Connection connected!\n");
-        /* Consume the event */
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED: {
-        printf("Connection closed!\n");
-        /* Consume the event */
-        if (robotraconteurlite_node_consume_event(event))
-        {
-            printf("Could not consume event\n");
-            return -1;
-        }
-        break;
-    }
-    default: {
-        printf("Unexpected event type\n");
-        return -1;
-    }
-    }
-    return 0;
 }
+
+robotraconteurlite_status tiny_service_connection_event(struct robotraconteurlite_event* event)
+{
+    printf("Connection event: %d\n", event->event_type);
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status tiny_service_send_complete(struct robotraconteurlite_event* event)
+{
+    printf("Send complete event\n");
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status tiny_service_event_error_returned(struct robotraconteurlite_event* event)
+{
+    printf("Event error returned: %d\n", event->event_error_code);
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+const struct robotraconteurlite_node_service_object_ops tiny_object_ops = {tiny_object_handle_message};
+
+const struct robotraconteurlite_node_service_ops tiny_service_ops = {tiny_service_service_client_event};
+
+const struct robotraconteurlite_node_ops tiny_node_ops = {tiny_service_connection_event, tiny_service_send_complete,
+                                                          tiny_service_event_error_returned};
 
 volatile sig_atomic_t signal_received = 0;
 
@@ -423,6 +289,8 @@ int main(int argc, char* argv[])
     robotraconteurlite_node_service_construct_c_str(&service, service_name, &services_head);
     robotraconteurlite_node_service_object_construct_c_str(&service_obj, service_name, root_object_type, NULL, NULL);
     robotraconteurlite_node_service_set_root_object(&service, &service_obj);
+    robotraconteurlite_node_service_set_ops(&service, &tiny_service_ops);
+    robotraconteurlite_node_service_object_set_ops(&service_obj, &tiny_object_ops);
 
     /* Construct the connection object head */
     robotraconteurlite_connection_list_head_construct(&connections_head);
@@ -447,6 +315,9 @@ int main(int argc, char* argv[])
         printf("Could not initialize node\n");
         return -1;
     }
+
+    robotraconteurlite_node_set_ops(&node, &tiny_node_ops);
+    (void)robotraconteurlite_node_set_services(&node, &services_head, &service_defs_head);
 
     /* Start TCP acceptor */
     (void)memset(&listen_addr, 0, sizeof(listen_addr));
@@ -519,28 +390,22 @@ int main(int argc, char* argv[])
 
         do
         {
-            struct robotraconteurlite_event event;
             robotraconteurlite_status rv = -1;
+            enum robotraconteurlite_event_type handled_event_type;
             robotraconteurlite_clock_gettime(&clock, &now);
-            rv = robotraconteurlite_node_next_event(&node, &event, now);
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not get event\n");
-                return -1;
-            }
+            rv = robotraconteurlite_node_run_next_event(&node, now, &handled_event_type);
 
-            rv = handle_event(&event, &services_head, &service_defs_head);
-            if (rv == 1)
-            {
-                break;
-            }
-            else if (RRLITE_FAILED(rv))
+            if (RRLITE_FAILED(rv))
             {
                 if (rv != ROBOTRACONTEURLITE_ERROR_RETRY)
                 {
-                    printf("Could not handle event\n");
-                    return -1;
+                    printf("Warning: could not handle event\n");
                 }
+            }
+
+            if (handled_event_type == ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE)
+            {
+                break;
             }
         } while (1);
 

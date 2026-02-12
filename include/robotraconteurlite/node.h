@@ -44,6 +44,12 @@ enum robotraconteurlite_event_type
 struct robotraconteurlite_node_service;
 struct robotraconteurlite_node_service_definition;
 
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+struct robotraconteurlite_node_ops;
+struct robotraconteurlite_node_service_ops;
+struct robotraconteurlite_node_service_objects_ops;
+#endif
+
 struct robotraconteurlite_node
 {
     /* Connections linked list */
@@ -61,7 +67,12 @@ struct robotraconteurlite_node
 
     /* Services */
     struct robotraconteurlite_node_service* services_head;
-    struct robotraconteurlite_node_service_object* service_defs_head;
+    struct robotraconteurlite_node_service_definition* service_defs_head;
+
+    /* ops */
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+    const struct robotraconteurlite_node_ops* node_ops;
+#endif
 };
 
 struct robotraconteurlite_node_send_messageentry_data
@@ -120,6 +131,10 @@ struct robotraconteurlite_node_service_object
     struct robotraconteurlite_node_service_object* prev;
     struct robotraconteurlite_node_service_object* next;
     struct robotraconteurlite_user_storage* user_storage;
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+    const struct robotraconteurlite_node_service_object_ops* service_object_ops;
+#endif
 };
 
 struct robotraconteurlite_node_service
@@ -131,6 +146,10 @@ struct robotraconteurlite_node_service
     struct robotraconteurlite_node_service* prev;
     struct robotraconteurlite_node_service* next;
     struct robotraconteurlite_user_storage* user_storage;
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+    const struct robotraconteurlite_node_service_ops* service_ops;
+#endif
 };
 
 struct robotraconteurlite_event
@@ -138,6 +157,7 @@ struct robotraconteurlite_event
     enum robotraconteurlite_event_type event_type;
     struct robotraconteurlite_node* node;
     struct robotraconteurlite_connection* connection;
+    robotraconteurlite_timespec event_time;
     struct robotraconteurlite_node_receive_messageentry_data received_message;
     int event_error_code;
     robotraconteurlite_size_t events_serviced;
@@ -169,6 +189,14 @@ struct robotraconteurlite_client_handshake_data
     robotraconteurlite_u32 request_id;
     struct robotraconteurlite_string root_object_type;
     char root_object_type_char[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
+};
+
+enum robotraconteurlite_node_service_event_type
+{
+    ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_NOOP = 0,
+    ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_MESSAGE,
+    ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_CONNECTED,
+    ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_DISCONNECTED
 };
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_init(
@@ -308,8 +336,17 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_s
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_special_request_object_type_name2(
     struct robotraconteurlite_event* event, struct robotraconteurlite_node_service* services_head);
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_event_is_member(
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_event_is_member(struct robotraconteurlite_event* event, const char* member_name);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_is_member2(
     struct robotraconteurlite_event* event, const char* service_path, const char* member_name);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_event_respond_member_not_found(struct robotraconteurlite_event* event);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_event_respond_invalid_operation(struct robotraconteurlite_event* event);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_is_connected(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection);
@@ -351,7 +388,47 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_transpo
 #ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_set_services(
     struct robotraconteurlite_node* node, struct robotraconteurlite_node_service* services_head,
-    struct robotraconteurlite_node_service_object* service_defs_head);
+    struct robotraconteurlite_node_service_definition* service_defs_head);
+
+struct robotraconteurlite_node_service_event
+{
+    struct robotraconteurlite_event* event;
+    struct robotraconteurlite_node_service* service;
+    struct robotraconteurlite_node_service_object* service_object;
+};
+
+struct robotraconteurlite_node_ops
+{
+    robotraconteurlite_status (*connection_event)(struct robotraconteurlite_event* event);
+    robotraconteurlite_status (*send_complete)(struct robotraconteurlite_event* event);
+    robotraconteurlite_status (*event_error_returned)(struct robotraconteurlite_event* event);
+};
+
+struct robotraconteurlite_node_service_ops
+{
+    void (*client_event)(struct robotraconteurlite_node_service_event* event,
+                         enum robotraconteurlite_node_service_event_type event_type);
+};
+
+struct robotraconteurlite_node_service_object_ops
+{
+    robotraconteurlite_status (*message_received)(struct robotraconteurlite_node_service_event* event);
+};
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_set_ops(struct robotraconteurlite_node* node, const struct robotraconteurlite_node_ops* ops);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_service_set_ops(
+    struct robotraconteurlite_node_service* service, const struct robotraconteurlite_node_service_ops* ops);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_service_object_set_ops(struct robotraconteurlite_node_service_object* service_object,
+                                               const struct robotraconteurlite_node_service_object_ops* ops);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_run_next_event(struct robotraconteurlite_node* node, robotraconteurlite_timespec now,
+                                       enum robotraconteurlite_event_type* handled_event_type);
+
 #endif
 
 #ifdef __cplusplus

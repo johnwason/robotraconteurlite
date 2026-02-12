@@ -89,7 +89,7 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ: {
-        if (robotraconteurlite_event_is_member(event, "tiny_service", "d1"))
+        if (robotraconteurlite_node_event_is_member2(event, "tiny_service", "d1"))
         {
             robotraconteurlite_double d1 = 1.234;
             struct robotraconteurlite_node_send_messageentry_data send_data;
@@ -143,7 +143,7 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
         }
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ: {
-        if (robotraconteurlite_event_is_member(event, "tiny_service", "d1"))
+        if (robotraconteurlite_node_event_is_member2(event, "tiny_service", "d1"))
         {
             /* Find "value" message element */
 

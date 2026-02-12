@@ -141,6 +141,8 @@ struct robotraconteurlite_connection_object
 #endif
 };
 
+struct robotraconteurlite_node_service;
+
 /* NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding) */
 struct robotraconteurlite_connection
 {
@@ -188,6 +190,9 @@ struct robotraconteurlite_connection
 
     /* Transport next wake request time */
     robotraconteurlite_timespec transport_next_wake;
+
+    /* Storage for associated service */
+    struct robotraconteurlite_node_service* service;
 };
 
 struct robotraconteurlite_connection_acceptor

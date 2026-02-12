@@ -164,6 +164,7 @@ robotraconteurlite_status tiny_object_handle_message(struct robotraconteurlite_n
 void tiny_service_service_client_event(struct robotraconteurlite_node_service_event* event,
                                        enum robotraconteurlite_node_service_event_type event_type)
 {
+    ROBOTRACONTEURLITE_UNUSED(event);
     switch (event_type)
     {
     case ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_CONNECTED:
@@ -185,6 +186,7 @@ robotraconteurlite_status tiny_service_connection_event(struct robotraconteurlit
 
 robotraconteurlite_status tiny_service_send_complete(struct robotraconteurlite_event* event)
 {
+    ROBOTRACONTEURLITE_UNUSED(event);
     printf("Send complete event\n");
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
@@ -391,7 +393,7 @@ int main(int argc, char* argv[])
         do
         {
             robotraconteurlite_status rv = -1;
-            enum robotraconteurlite_event_type handled_event_type;
+            enum robotraconteurlite_event_type handled_event_type = ROBOTRACONTEURLITE_EVENT_TYPE_NOOP;
             robotraconteurlite_clock_gettime(&clock, &now);
             rv = robotraconteurlite_node_run_next_event(&node, now, &handled_event_type);
 

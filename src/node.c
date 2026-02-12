@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <string.h>
 #include <limits.h>
+/* TODO: don't use stdio.h */
+/* cppcheck-suppress misra-c2012-21.6 */
 #include <stdio.h>
 
 #define FLAGS_CHECK_ALL ROBOTRACONTEURLITE_FLAGS_CHECK_ALL
@@ -407,10 +409,10 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CONNECTCLIENT: {
         robotraconteurlite_status rv = -1;
-        struct robotraconteurlite_node_service* connected_service;
+        struct robotraconteurlite_node_service* connected_service = NULL;
         {
             /* check that requested service exists! */
-            if (event->node->services_head)
+            if (event->node->services_head != NULL)
             {
                 struct robotraconteurlite_node_service* s = event->node->services_head->next;
                 while (s != NULL)
@@ -469,10 +471,28 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
         return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_DISCONNECTCLIENT: {
+        robotraconteurlite_status rv = -1;
         /* Clear the client established flag */
         FLAGS_CLEAR(event->connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_ESTABLISHED);
         /* Clear the associated service */
         event->connection->service = NULL;
+
+        if (!robotraconteurlite_connection_is_server(event->connection))
+        {
+            (void)robotraconteurlite_node_consume_event(event);
+            break;
+        }
+        /* TODO: handle disconnect client */
+        rv = robotraconteurlite_node_send_messageentry_empty_response(
+            event->node, event->connection, &event->received_message.received_message_entry_header);
+        if (FAILED(rv))
+        {
+            return robotraconteurlite_node_event_special_request_handle_error(event, rv);
+        }
+
+        /* Consume event */
+        (void)robotraconteurlite_node_consume_event(event);
+        return ROBOTRACONTEURLITE_ERROR_CONSUMED;
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CONNECTIONTEST:
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_GETNODEINFO: {
@@ -1516,7 +1536,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                 robotraconteurlite_size_t k = 0;
                 robotraconteurlite_u32 list_i = 0;
 
-                memset(&nested_element_header, 0, sizeof(struct robotraconteurlite_messageelement_const_header));
+                (void)memset(&nested_element_header, 0, sizeof(struct robotraconteurlite_messageelement_const_header));
 
                 robotraconteurlite_string_from_c_str("objectimplements", &nested_element_header.element_name);
                 nested_element_header.element_type = ROBOTRACONTEURLITE_DATATYPE_LIST;
@@ -1534,14 +1554,14 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                     if ((service_object->implemented_qualified_types.data[i] == ((char)';')) ||
                         (i >= service_object->implemented_qualified_types.len))
                     {
-                        if ((i - k) > 0)
+                        if ((i - k) > 0U)
                         {
                             struct robotraconteurlite_const_string o;
                             struct robotraconteurlite_const_string list_i_str;
                             char list_i_str_buf[16];
-                            memset(list_i_str_buf, 0, sizeof(list_i_str_buf));
+                            (void)memset(list_i_str_buf, 0, sizeof(list_i_str_buf));
                             /* TODO: snprintf? */
-                            (void)sprintf(list_i_str_buf, sizeof(list_i_str_buf), "%d", list_i);
+                            (void)sprintf(list_i_str_buf, "%u", list_i);
                             o.data = &service_object->implemented_qualified_types.data[k];
                             o.len = (i - k);
                             list_i_str.data = list_i_str_buf;
@@ -1554,7 +1574,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                             }
                             list_i++;
                         }
-                        k = i + 1;
+                        k = i + 1U;
                     }
                 }
 
@@ -2220,7 +2240,7 @@ static robotraconteurlite_status robotraconteurlite_node_run_next_event__service
     struct robotraconteurlite_node_service* s = event->connection->service;
     struct robotraconteurlite_node_service_event s_evt;
     robotraconteurlite_status rv = -1;
-    memset(&s_evt, 0, sizeof(struct robotraconteurlite_node_service_event));
+    (void)memset(&s_evt, 0, sizeof(struct robotraconteurlite_node_service_event));
     s_evt.event = event;
     s_evt.service = s;
     rv = robotraconteurlite_node_event_special_request(event);
@@ -2294,7 +2314,7 @@ static robotraconteurlite_status robotraconteurlite_node_run_next_event__service
     }
 
     if ((!FLAGS_CHECK(event->connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_ESTABLISHED)) ||
-        event->connection->service == NULL)
+        (event->connection->service == NULL))
 
     {
         /* not connected */
@@ -2353,7 +2373,7 @@ static robotraconteurlite_status robotraconteurlite_node_run_next_event__service
         if ((s != NULL) && (s->service_ops != NULL) && (s->service_ops->client_event != NULL))
         {
             struct robotraconteurlite_node_service_event s_evt;
-            memset(&s_evt, 0, sizeof(struct robotraconteurlite_node_service_event));
+            (void)memset(&s_evt, 0, sizeof(struct robotraconteurlite_node_service_event));
             s_evt.event = event;
             s_evt.service = s;
             s->service_ops->client_event(&s_evt, ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_DISCONNECTED);
@@ -2398,6 +2418,17 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event(struct robotrac
         {
             (void)robotraconteurlite_node_run_next_event__client_connection_error(&event);
         }
+        if ((node->node_ops != NULL) && (node->node_ops->connection_event != NULL))
+        {
+            rv = node->node_ops->connection_event(&event);
+            return robotraconteurlite_node_run_next_event__consume_event(&event, rv);
+        }
+        else
+        {
+            /* no ops, return to user */
+            return robotraconteurlite_node_consume_event(&event);
+        }
+        break;
     }
     case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CONNECTED:
     case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED: {
@@ -2411,10 +2442,11 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event(struct robotrac
             /* no ops, return to user */
             return robotraconteurlite_node_consume_event(&event);
         }
+        break;
     }
     case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT: {
         /* send a connection test packet */
-        robotraconteurlite_client_send_heartbeat(event.node, event.connection);
+        (void)robotraconteurlite_client_send_heartbeat(event.node, event.connection);
         return robotraconteurlite_node_consume_event(&event);
     }
     case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_SEND_COMPLETE: {
@@ -2428,6 +2460,7 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event(struct robotrac
             /* no ops, return to user */
             return robotraconteurlite_node_consume_event(&event);
         }
+        break;
     }
     case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED: {
         if (robotraconteurlite_connection_is_server(event.connection) != 0)
@@ -2438,6 +2471,7 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event(struct robotrac
         {
             return robotraconteurlite_node_run_next_event__client(&event);
         }
+        break;
     }
     default:
         break;

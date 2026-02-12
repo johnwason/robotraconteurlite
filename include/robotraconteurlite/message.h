@@ -496,22 +496,22 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageentry
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u32 expected_max_len);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_c_str(
-    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* nested_element_name,
     struct robotraconteurlite_messageelement_reader* element_reader);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_messageentry_reader_find_element_verify_scalar_c_str(
-    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* nested_element_name,
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u16 expected_data_type);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageentry_reader_find_element_verify_array_c_str(
-    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* nested_element_name,
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u16 expected_data_type,
     robotraconteurlite_u32 expected_len, robotraconteurlite_u8 var_length);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_messageentry_reader_find_element_verify_string_c_str(
-    struct robotraconteurlite_messageentry_reader* entry_reader, const char* element_name,
+    struct robotraconteurlite_messageentry_reader* entry_reader, const char* nested_element_name,
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u32 expected_max_len);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status
@@ -559,6 +559,27 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_messageelement_reader_find_nested_element_verify_string(
     struct robotraconteurlite_messageelement_reader* element_reader,
     const struct robotraconteurlite_const_string* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u32 expected_max_len);
+
+ROBOTRACONTEURLITE_API
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader);
+
+ROBOTRACONTEURLITE_API
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_verify_scalar_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u16 expected_data_type);
+
+ROBOTRACONTEURLITE_API
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_verify_array_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
+    struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u16 expected_data_type,
+    robotraconteurlite_u32 expected_len, robotraconteurlite_u8 var_length);
+
+ROBOTRACONTEURLITE_API
+robotraconteurlite_status robotraconteurlite_messageelement_reader_find_nested_element_verify_string_c_str(
+    struct robotraconteurlite_messageelement_reader* element_reader, const char* nested_element_name,
     struct robotraconteurlite_messageelement_reader* nested_element_reader, robotraconteurlite_u32 expected_max_len);
 
 /* Message Writer */

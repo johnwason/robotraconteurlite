@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <string.h>
 #include <limits.h>
+#include <stdio.h>
 
 #define FLAGS_CHECK_ALL ROBOTRACONTEURLITE_FLAGS_CHECK_ALL
 #define FLAGS_CHECK ROBOTRACONTEURLITE_FLAGS_CHECK
@@ -1507,7 +1508,63 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                 return rv;
             }
 
-            /* TODO: object implements */
+            if (service_object->implemented_qualified_types.len > 0U)
+            {
+                struct robotraconteurlite_messageelement_writer nested_element_writer;
+                struct robotraconteurlite_messageelement_const_header nested_element_header;
+                robotraconteurlite_size_t i = 0;
+                robotraconteurlite_size_t k = 0;
+                robotraconteurlite_u32 list_i = 0;
+
+                memset(&nested_element_header, 0, sizeof(struct robotraconteurlite_messageelement_const_header));
+
+                robotraconteurlite_string_from_c_str("objectimplements", &nested_element_header.element_name);
+                nested_element_header.element_type = ROBOTRACONTEURLITE_DATATYPE_LIST;
+
+                rv = robotraconteurlite_messageelement_writer_begin_nested_element(
+                    &send_data.element_writer, &nested_element_header, &nested_element_writer);
+                if (FAILED(rv))
+                {
+                    return rv;
+                }
+
+                for (i = 0; i < service_object->implemented_qualified_types.len; i++)
+                {
+
+                    if ((service_object->implemented_qualified_types.data[i] == ((char)';')) ||
+                        (i >= service_object->implemented_qualified_types.len))
+                    {
+                        if ((i - k) > 0)
+                        {
+                            struct robotraconteurlite_const_string o;
+                            struct robotraconteurlite_const_string list_i_str;
+                            char list_i_str_buf[16];
+                            memset(list_i_str_buf, 0, sizeof(list_i_str_buf));
+                            /* TODO: snprintf? */
+                            (void)sprintf(list_i_str_buf, sizeof(list_i_str_buf), "%d", list_i);
+                            o.data = &service_object->implemented_qualified_types.data[k];
+                            o.len = (i - k);
+                            list_i_str.data = list_i_str_buf;
+                            list_i_str.len = strlen(list_i_str_buf);
+                            rv = robotraconteurlite_messageelement_writer_write_data_string(&nested_element_writer,
+                                                                                            &list_i_str, &o);
+                            if (FAILED(rv))
+                            {
+                                return rv;
+                            }
+                            list_i++;
+                        }
+                        k = i + 1;
+                    }
+                }
+
+                rv = robotraconteurlite_messageelement_writer_end_nested_element(
+                    &send_data.element_writer, &nested_element_header, &nested_element_writer);
+                if (FAILED(rv))
+                {
+                    return rv;
+                }
+            }
         }
 
         rv = robotraconteurlite_node_end_send_messageentry(&send_data);

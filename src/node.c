@@ -1561,6 +1561,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                             char list_i_str_buf[16];
                             (void)memset(list_i_str_buf, 0, sizeof(list_i_str_buf));
                             /* TODO: snprintf? */
+                            /* cppcheck-suppress invalidPrintfArgType_uint */
                             (void)sprintf(list_i_str_buf, "%u", list_i);
                             o.data = &service_object->implemented_qualified_types.data[k];
                             o.len = (i - k);

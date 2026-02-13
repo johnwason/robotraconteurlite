@@ -348,6 +348,9 @@ robotraconteurlite_node_event_respond_member_not_found(struct robotraconteurlite
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_node_event_respond_invalid_operation(struct robotraconteurlite_event* event);
 
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_respond_element_read_error(
+    struct robotraconteurlite_event* event, robotraconteurlite_status read_rv);
+
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_is_connected(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection);
 

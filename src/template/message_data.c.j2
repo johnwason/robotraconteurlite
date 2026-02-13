@@ -78,6 +78,24 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}
                                                               (const robotraconteurlite_byte*)value->data, value->len,
                                                               ROBOTRACONTEURLITE_DATATYPE_{{type.upper()}}, sizeof({{ctype}}));
 }
+
+robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer,
+    const char* element_name, {{ctype}} value)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageelement_writer_write_{{type}}(element_writer, &element_name_str, value);
+}
+
+robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_array_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer,
+    const char* element_name, const struct robotraconteurlite_array_{{type}}* value)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageelement_writer_write_{{type}}_array(element_writer, &element_name_str, value);
+}
 {% endfor %}
 
 /* string */
@@ -96,4 +114,24 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_st
     return robotraconteurlite_messageelement_writer_write_raw(element_writer, element_name,
                                                               (const robotraconteurlite_byte*)value->data, value->len,
                                                               ROBOTRACONTEURLITE_DATATYPE_STRING, sizeof(char));
+}
+
+
+robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str2(
+    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name, const char* value)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    struct robotraconteurlite_const_string value_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    robotraconteurlite_string_from_c_str(value, &value_str);
+    return robotraconteurlite_messageelement_writer_write_data_string(element_writer, &element_name_str, &value_str);
+}
+
+robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name,
+    const struct robotraconteurlite_const_string* value)
+{
+    struct robotraconteurlite_const_string element_name_str;
+    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
+    return robotraconteurlite_messageelement_writer_write_data_string(element_writer, &element_name_str, value);
 }

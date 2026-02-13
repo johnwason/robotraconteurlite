@@ -54,21 +54,26 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageeleme
     struct robotraconteurlite_messageelement_writer* element_writer,
     const struct robotraconteurlite_const_string* element_name, const struct robotraconteurlite_array_{{type}}* value);
 
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer,
+    const char* element_name, {{ctype}} value);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_array_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer,
+    const char* element_name, const struct robotraconteurlite_array_{{type}}* value);
+
 {% endfor %}
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string(
     struct robotraconteurlite_messageelement_writer* element_writer,
     const struct robotraconteurlite_const_string* element_name, const struct robotraconteurlite_const_string* value);
 
-static robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str(
-    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name, const char* value)
-{
-    struct robotraconteurlite_const_string element_name_str;
-    struct robotraconteurlite_const_string value_str;
-    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
-    robotraconteurlite_string_from_c_str(value, &value_str);
-    return robotraconteurlite_messageelement_writer_write_data_string(element_writer, &element_name_str, &value_str);
-}
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name,
+    const struct robotraconteurlite_const_string* value);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str2(
+    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name, const char* value);
 
 #ifdef __cplusplus
 }

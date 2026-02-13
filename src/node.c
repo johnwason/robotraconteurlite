@@ -763,15 +763,15 @@ robotraconteurlite_status robotraconteurlite_connection_send_messageentry_error_
         return rv;
     }
 
-    rv = robotraconteurlite_messageelement_writer_write_data_string_c_str(&send_data.element_writer, "errorname",
-                                                                          error_name);
+    rv = robotraconteurlite_messageelement_writer_write_data_string_c_str2(&send_data.element_writer, "errorname",
+                                                                           error_name);
     if (FAILED(rv))
     {
         return rv;
     }
 
-    rv = robotraconteurlite_messageelement_writer_write_data_string_c_str(&send_data.element_writer, "errorstring",
-                                                                          error_message);
+    rv = robotraconteurlite_messageelement_writer_write_data_string_c_str2(&send_data.element_writer, "errorstring",
+                                                                           error_message);
     if (FAILED(rv))
     {
         return rv;
@@ -1662,6 +1662,30 @@ robotraconteurlite_status robotraconteurlite_node_event_respond_invalid_operatio
     return robotraconteurlite_connection_send_messageentry_error_response(
         event->node, event->connection, &event->received_message.received_message_entry_header,
         ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation", "Invalid operation");
+}
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_respond_element_read_error(
+    struct robotraconteurlite_event* event, robotraconteurlite_status read_rv)
+{
+    switch (read_rv)
+    {
+    case ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND:
+        return robotraconteurlite_connection_send_messageentry_error_response(
+            event->node, event->connection, &event->received_message.received_message_entry_header,
+            ROBOTRACONTEURLITE_MESSAGEERRORTYPE_MESSAGEELEMENTNOTFOUND, "RobotRaconteur.MessageElementNotFound",
+            "Message element not found");
+
+    case ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_TYPE_MISMATCH:
+        return robotraconteurlite_connection_send_messageentry_error_response(
+            event->node, event->connection, &event->received_message.received_message_entry_header,
+            ROBOTRACONTEURLITE_MESSAGEERRORTYPE_DATATYPEMISMATCH, "RobotRaconteur.DataTypeMismatch",
+            "Element type mismatch");
+    default:
+        break;
+    }
+
+    /* unrelated error, return to system */
+    return read_rv;
 }
 
 robotraconteurlite_status robotraconteurlite_client_is_connected(struct robotraconteurlite_node* node,

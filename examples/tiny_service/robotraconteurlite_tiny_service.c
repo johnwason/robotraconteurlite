@@ -60,7 +60,6 @@ robotraconteurlite_status tiny_object_handle_message(struct robotraconteurlite_n
         {
             robotraconteurlite_double d1 = 1.234;
             struct robotraconteurlite_node_send_messageentry_data send_data;
-            struct robotraconteurlite_const_string element_name;
             robotraconteurlite_status rv = -1;
             send_data.node = s_evt->event->node;
             send_data.connection = s_evt->event->connection;
@@ -76,8 +75,7 @@ robotraconteurlite_status tiny_object_handle_message(struct robotraconteurlite_n
                 return -1;
             }
 
-            robotraconteurlite_string_from_c_str("value", &element_name);
-            if (robotraconteurlite_messageelement_writer_write_double(&send_data.element_writer, &element_name, d1))
+            if (robotraconteurlite_messageelement_writer_write_double_c_str(&send_data.element_writer, "value", d1))
             {
                 printf("Could not write double\n");
                 return -1;
@@ -105,30 +103,26 @@ robotraconteurlite_status tiny_object_handle_message(struct robotraconteurlite_n
         if (robotraconteurlite_node_event_is_member(s_evt->event, "d1"))
         {
             /* Find "value" message element */
-
-            struct robotraconteurlite_const_string element_name;
             struct robotraconteurlite_messageelement_reader element_reader;
             robotraconteurlite_status rv = -1;
             robotraconteurlite_double d1 = 0.0;
-            robotraconteurlite_string_from_c_str("value", &element_name);
 
-            rv = robotraconteurlite_messageentry_reader_find_element_verify_scalar(
-                &s_evt->event->received_message.entry_reader, &element_name, &element_reader,
+            rv = robotraconteurlite_messageentry_reader_find_element_verify_scalar_c_str(
+                &s_evt->event->received_message.entry_reader, "value", &element_reader,
                 ROBOTRACONTEURLITE_DATATYPE_DOUBLE);
 
-            if (rv == ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND ||
-                rv == ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_TYPE_MISMATCH)
+            if (RRLITE_FAILED(rv))
             {
                 printf("Could not find element or type mismatch\n");
-                /* Send error response */
-                return robotraconteurlite_node_event_respond_invalid_operation(s_evt->event);
+                return robotraconteurlite_node_event_respond_element_read_error(s_evt->event, rv);
             }
 
-            if (robotraconteurlite_messageelement_reader_read_data_double(&element_reader, &d1))
+            rv = robotraconteurlite_messageelement_reader_read_data_double(&element_reader, &d1);
+            if (RRLITE_FAILED(rv))
             {
                 printf("Could not read double\n");
                 /* Send error response */
-                return robotraconteurlite_node_event_respond_invalid_operation(s_evt->event);
+                return robotraconteurlite_node_event_respond_element_read_error(s_evt->event, rv);
             }
 
             printf("Got set d1=%f\n", d1);

@@ -2489,13 +2489,25 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event(struct robotrac
     case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED: {
         if (robotraconteurlite_connection_is_server(event.connection) != 0)
         {
-            return robotraconteurlite_node_run_next_event__service(&event);
+            rv = robotraconteurlite_node_run_next_event__service(&event);
         }
         else
         {
-            return robotraconteurlite_node_run_next_event__client(&event);
+            rv = robotraconteurlite_node_run_next_event__client(&event);
         }
-        break;
+        if (FAILED(rv))
+        {
+            switch (rv)
+            {
+            case ROBOTRACONTEURLITE_ERROR_RETRY:
+            case ROBOTRACONTEURLITE_ERROR_CONSUMED:
+                break;
+            default:
+                (void)robotraconteurlite_connection_close(event.connection);
+                break;
+            }
+        }
+        return rv;
     }
     default:
         break;

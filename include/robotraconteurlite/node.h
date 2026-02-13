@@ -224,6 +224,9 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_verify_
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
     struct robotraconteurlite_message_const_header* message_header);
 
+ROBOTRACONTEURLITE_API void robotraconteurlite_node_event_construct_send_data(
+    struct robotraconteurlite_event* event, struct robotraconteurlite_node_send_messageentry_data* send_data);
+
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_node_begin_send_messageentry(struct robotraconteurlite_node_send_messageentry_data* send_data);
 

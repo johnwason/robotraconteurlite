@@ -951,7 +951,7 @@ robotraconteurlite_size_t robotraconteurlite_connections_communicate_drain_pendi
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     robotraconteurlite_status rv = -1;
-    struct robotraconteurlite_connection_object* c;
+    struct robotraconteurlite_connection_object* c = NULL;
     robotraconteurlite_size_t o = 0;
     rv = robotraconteurlite_connections_prepare_wait(connections_head, now);
     if (FAILED(rv))
@@ -980,7 +980,7 @@ robotraconteurlite_size_t robotraconteurlite_connections_communicate_available(
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now)
 {
     robotraconteurlite_status rv = -1;
-    struct robotraconteurlite_connection_object* c;
+    struct robotraconteurlite_connection_object* c = NULL;
     robotraconteurlite_size_t o = 0;
     rv = robotraconteurlite_connections_prepare_wait(connections_head, now);
     if (FAILED(rv))

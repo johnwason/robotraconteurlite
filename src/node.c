@@ -2663,7 +2663,7 @@ robotraconteurlite_status robotraconteurlite_node_run_events_drain(struct robotr
 
         drain_pending = robotraconteurlite_node_events_drain_pending(node, now);
         cycles++;
-    } while ((drain_pending > 0) && (cycles < max_cycles));
+    } while ((drain_pending > 0U) && (cycles < max_cycles));
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
@@ -2676,11 +2676,15 @@ robotraconteurlite_status robotraconteurlite_node_run_events_available(struct ro
     robotraconteurlite_size_t drain_pending = 0;
     robotraconteurlite_size_t cycles = 0;
     robotraconteurlite_status rv = -1;
-    robotraconteurlite_status node_available = 0;
+    robotraconteurlite_size_t node_available = 0;
     do
     {
 
         rv = robotraconteurlite_connections_communicate(node->connections_head, now);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
 
         do
         {
@@ -2698,10 +2702,10 @@ robotraconteurlite_status robotraconteurlite_node_run_events_available(struct ro
 
             drain_pending = robotraconteurlite_node_events_drain_pending(node, now);
             cycles++;
-        } while ((drain_pending > 0) && (cycles < max_cycles));
+        } while ((drain_pending > 0U) && (cycles < max_cycles));
         cycles++;
         node_available = robotraconteurlite_node_events_available(node, now);
-    } while ((node_available > 0) && (cycles < max_cycles));
+    } while ((node_available > 0U) && (cycles < max_cycles));
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }

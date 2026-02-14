@@ -155,7 +155,7 @@ robotraconteurlite_status robotraconteurlite_poll_connections_run(struct robotra
         return rv;
     }
 
-    if (robotraconteurlite_node_events_pending(node) > 0)
+    if (robotraconteurlite_node_events_pending(node) > 0U)
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }

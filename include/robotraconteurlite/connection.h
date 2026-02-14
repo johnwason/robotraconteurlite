@@ -89,6 +89,7 @@ struct robotraconteurlite_transport_storage
 
 struct robotraconteurlite_user_storage
 {
+    robotraconteurlite_u32 user_data_type_code;
     void* user_data;
 };
 

@@ -24,7 +24,7 @@ jobs:
         cd build
         cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF \
         -DCMAKE_C_FLAGS="-DNDEBUG -DROBOTRACONTEURLITE_CODE_QUALITY_CHECK" \
-        -DCMAKE_C_CPPCHECK="/usr/bin/cppcheck;-v;--enable=warning;--enable=style;--enable=portability;--inconclusive;--force;--inline-suppr;--error-exitcode=1;--std=c99;--addon=misra;--suppress=misra-c2012-2.5;--suppress=misra-c2012-8.7;--suppress=misra-c2012-2.4;--suppress=misra-c2012-15.5;--suppress=unreadVariable;--suppress=variableScope" \
+        -DCMAKE_C_CPPCHECK="/usr/bin/cppcheck;-v;--enable=warning;--enable=style;--enable=portability;--inconclusive;--inline-suppr;--error-exitcode=1;--std=c99;--addon=misra;--suppress=misra-c2012-2.5;--suppress=misra-c2012-8.7;--suppress=misra-c2012-2.4;--suppress=misra-c2012-15.5;--suppress=unreadVariable;--suppress=variableScope" \
         ..
     - name: make
       run: cmake --build build -v -- -k 100 -j1

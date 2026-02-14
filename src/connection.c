@@ -205,6 +205,7 @@ void robotraconteurlite_connections_construct_from_array(
     }
 }
 
+/* cppcheck-suppress constParameterPointer*/
 robotraconteurlite_status robotraconteurlite_connection_next_wake(struct robotraconteurlite_connection* connection,
                                                                   robotraconteurlite_timespec now,
                                                                   robotraconteurlite_timespec* next_wake)
@@ -236,6 +237,7 @@ robotraconteurlite_status robotraconteurlite_connection_next_wake(struct robotra
     if (connection->heartbeat_next_check_ms > 0)
     {
         if ((now > connection->heartbeat_next_check_ms) ||
+            /* cppcheck-suppress knownConditionTrueFalse */
             ((connection->heartbeat_next_check_ms == 0) && (connection->heartbeat_period_ms > 0)))
         {
             *next_wake = now;
@@ -570,6 +572,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connection_i
 robotraconteurlite_status robotraconteurlite_connection_impl_accept2(struct robotraconteurlite_connection* connection,
                                                                      robotraconteurlite_timespec now,
                                                                      robotraconteurlite_u32 transport_type,
+                                                                     /* cppcheck-suppress constParameterPointer*/
                                                                      struct robotraconteurlite_connection_socket* sock)
 {
 

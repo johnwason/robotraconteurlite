@@ -28,79 +28,86 @@ struct robotraconteurlite_messageelement_writer;
 /* reader */
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_double_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_double* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_double* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_double(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_double* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_single_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_single* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_single* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_single(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_single* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int8_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int8* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int8* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int8(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_i8* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint8_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_uint8* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_uint8* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint8(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u8* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int16_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int16* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int16* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int16(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_i16* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint16_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_uint16* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_uint16* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint16(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u16* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int32_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int32* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int32* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int32(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_i32* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint32_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_uint32* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_uint32* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint32(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u32* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int64_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int64* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_int64* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_int64(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_i64* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint64_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_uint64* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_uint64* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_uint64(
     struct robotraconteurlite_messageelement_reader* element_reader, robotraconteurlite_u64* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_cdouble_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_cdouble* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_cdouble* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_cdouble(
     struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_cdouble* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_csingle_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_csingle* array);
+    struct robotraconteurlite_messageelement_reader* element_reader,
+    struct robotraconteurlite_array_csingle* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_csingle(
     struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_csingle* value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_bool_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_bool* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_bool* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_bool(
     struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_bool* value);

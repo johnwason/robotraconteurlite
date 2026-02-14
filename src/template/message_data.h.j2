@@ -33,7 +33,7 @@ struct robotraconteurlite_messageelement_writer;
 
 {% for type,ctype in types %}
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_{{type}}_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_{{type}}* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_{{type}}* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_{{type}}(
     struct robotraconteurlite_messageelement_reader* element_reader, {{ctype}}* value);

@@ -251,12 +251,12 @@ robotraconteurlite_connection_message_receive_consume(struct robotraconteurlite_
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_connection_close(struct robotraconteurlite_connection* connection);
 
-static int robotraconteurlite_connection_is_closed(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_closed(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLOSED);
 }
 
-static int robotraconteurlite_connection_is_closed_event(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_closed_event(const struct robotraconteurlite_connection* connection)
 {
     return (ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLOSED)) &&
            (!ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
@@ -268,7 +268,7 @@ static void robotraconteurlite_connection_consume_closed(struct robotraconteurli
     ROBOTRACONTEURLITE_FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLOSED_CONSUMED);
 }
 
-static int robotraconteurlite_connection_is_error(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_error(const struct robotraconteurlite_connection* connection)
 {
     /* Check for error, but don't report if already closed or closing */
     return (ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_ERROR)) &&
@@ -277,7 +277,7 @@ static int robotraconteurlite_connection_is_error(struct robotraconteurlite_conn
                (ROBOTRACONTEURLITE_STATUS_FLAGS_CLOSED | ROBOTRACONTEURLITE_STATUS_FLAGS_CLOSE_REQUESTED)));
 }
 
-static int robotraconteurlite_connection_is_connected(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_connected(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED);
 }
@@ -287,20 +287,21 @@ static void robotraconteurlite_connection_consume_connected(struct robotraconteu
     ROBOTRACONTEURLITE_FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED_CONSUMED);
 }
 
-static int robotraconteurlite_connection_is_connected_event(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_connected_event(const struct robotraconteurlite_connection* connection)
 {
     return (ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED)) &&
            (!ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
                                             ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED_CONSUMED));
 }
 
-static int robotraconteurlite_connection_is_message_received(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_message_received(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
                                           ROBOTRACONTEURLITE_STATUS_FLAGS_MESSAGE_RECEIVED);
 }
 
-static int robotraconteurlite_connection_is_message_received_event(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_message_received_event(
+    const struct robotraconteurlite_connection* connection)
 {
     return (ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
                                            ROBOTRACONTEURLITE_STATUS_FLAGS_MESSAGE_RECEIVED)) &&
@@ -313,12 +314,12 @@ static void robotraconteurlite_connection_consume_message_received(struct robotr
     ROBOTRACONTEURLITE_FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_MESSAGE_CONSUMED);
 }
 
-static int robotraconteurlite_connection_is_message_sent(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_message_sent(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_MESSAGE_SENT);
 }
 
-static int robotraconteurlite_connection_is_message_sent_event(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_message_sent_event(const struct robotraconteurlite_connection* connection)
 {
     return (ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
                                            ROBOTRACONTEURLITE_STATUS_FLAGS_MESSAGE_SENT)) &&
@@ -336,7 +337,7 @@ static void robotraconteurlite_connection_error(struct robotraconteurlite_connec
     ROBOTRACONTEURLITE_FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_ERROR);
 }
 
-static int robotraconteurlite_connection_is_server(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_server(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->config_flags, ROBOTRACONTEURLITE_CONFIG_FLAGS_ISSERVER);
 }
@@ -347,7 +348,7 @@ ROBOTRACONTEURLITE_API void robotraconteurlite_connections_construct_from_array(
     robotraconteurlite_size_t buffer_size, robotraconteurlite_size_t buffer_count,
     struct robotraconteurlite_connection_object* connections_head);
 
-static int robotraconteurlite_connection_is_heartbeat_timeout(struct robotraconteurlite_connection* connection,
+static int robotraconteurlite_connection_is_heartbeat_timeout(const struct robotraconteurlite_connection* connection,
                                                               robotraconteurlite_timespec now)
 {
     robotraconteurlite_i64 recv_diff_ms = now - connection->last_recv_message_time;
@@ -366,7 +367,7 @@ static int robotraconteurlite_connection_is_heartbeat_timeout(struct robotracont
     return 0;
 }
 
-static int robotraconteurlite_connection_is_idle(struct robotraconteurlite_connection* connection)
+static int robotraconteurlite_connection_is_idle(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_IDLE);
 }

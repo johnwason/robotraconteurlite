@@ -199,9 +199,10 @@ enum robotraconteurlite_node_service_event_type
     ROBOTRACONTEURLITE_NODE_SERVICE_EVENT_TYPE_CLIENT_DISCONNECTED
 };
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_init(
-    struct robotraconteurlite_node* node, struct robotraconteurlite_nodeid* nodeid,
-    struct robotraconteurlite_const_string* nodename, struct robotraconteurlite_connection_object* connections_head);
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_init(struct robotraconteurlite_node* node, const struct robotraconteurlite_nodeid* nodeid,
+                             const struct robotraconteurlite_const_string* nodename,
+                             struct robotraconteurlite_connection_object* connections_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_shutdown(struct robotraconteurlite_node* node);
 

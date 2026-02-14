@@ -75,7 +75,7 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
         return robotraconteurlite_node_event_special_request_object_type_name2(event, services_head);
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CLIENTKEEPALIVEREQ: {
-        robotraconteurlite_status rv = robotraconteurlite_node_send_messageentry_empty_response(
+        rv = robotraconteurlite_node_send_messageentry_empty_response(
             event->node, event->connection, &event->received_message.received_message_entry_header);
         if (RETRY(rv))
         {
@@ -94,7 +94,6 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
             robotraconteurlite_double d1 = 1.234;
             struct robotraconteurlite_node_send_messageentry_data send_data;
             struct robotraconteurlite_const_string element_name;
-            robotraconteurlite_status rv = -1;
             send_data.node = event->node;
             send_data.connection = event->connection;
             rv = robotraconteurlite_node_begin_send_messageentry_response(
@@ -149,7 +148,6 @@ int handle_message(struct robotraconteurlite_event* event, struct robotraconteur
 
             struct robotraconteurlite_const_string element_name;
             struct robotraconteurlite_messageelement_reader element_reader;
-            robotraconteurlite_status rv = -1;
             robotraconteurlite_double d1 = 0.0;
             robotraconteurlite_string_from_c_str("value", &element_name);
 
@@ -344,7 +342,7 @@ void signal_handler(int signum)
     signal_received = 1;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     /* Variable storage */
     struct robotraconteurlite_connection connections_storage[NUM_CONNECTIONS];
@@ -520,7 +518,6 @@ int main(int argc, char* argv[])
         do
         {
             struct robotraconteurlite_event event;
-            robotraconteurlite_status rv = -1;
             robotraconteurlite_clock_gettime(&clock, &now);
             rv = robotraconteurlite_node_next_event(&node, &event, now);
             if (RRLITE_FAILED(rv))

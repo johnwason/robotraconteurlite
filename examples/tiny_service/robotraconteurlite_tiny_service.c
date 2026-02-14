@@ -172,12 +172,14 @@ void tiny_service_service_client_event(struct robotraconteurlite_node_service_ev
     }
 }
 
+/* cppcheck-suppress constParameterCallback */
 robotraconteurlite_status tiny_service_connection_event(struct robotraconteurlite_event* event)
 {
     printf("Connection event: %d\n", event->event_type);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
+/* cppcheck-suppress constParameterCallback */
 robotraconteurlite_status tiny_service_send_complete(struct robotraconteurlite_event* event)
 {
     ROBOTRACONTEURLITE_UNUSED(event);
@@ -185,6 +187,7 @@ robotraconteurlite_status tiny_service_send_complete(struct robotraconteurlite_e
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
+/* cppcheck-suppress constParameterPointer */
 robotraconteurlite_status tiny_service_event_error_returned(struct robotraconteurlite_event* event)
 {
     printf("Event error returned: %d\n", event->event_error_code);
@@ -206,7 +209,7 @@ void signal_handler(int signum)
     signal_received = 1;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     /* Variable storage */
     struct robotraconteurlite_connection connections_storage[NUM_CONNECTIONS];
@@ -386,7 +389,6 @@ int main(int argc, char* argv[])
 
         do
         {
-            robotraconteurlite_status rv = -1;
             enum robotraconteurlite_event_type handled_event_type = ROBOTRACONTEURLITE_EVENT_TYPE_NOOP;
             robotraconteurlite_clock_gettime(&clock, &now);
             rv = robotraconteurlite_node_run_next_event(&node, now, &handled_event_type);

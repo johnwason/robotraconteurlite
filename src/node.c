@@ -33,8 +33,8 @@
 #define RETRY ROBOTRACONTEURLITE_RETRY
 
 robotraconteurlite_status robotraconteurlite_node_init(struct robotraconteurlite_node* node,
-                                                       struct robotraconteurlite_nodeid* nodeid,
-                                                       struct robotraconteurlite_const_string* nodename,
+                                                       const struct robotraconteurlite_nodeid* nodeid,
+                                                       const struct robotraconteurlite_const_string* nodename,
                                                        struct robotraconteurlite_connection_object* connections_head)
 {
     (void)memset(node, 0, sizeof(struct robotraconteurlite_node));
@@ -701,6 +701,7 @@ robotraconteurlite_status robotraconteurlite_node_abort_send_messageentry(
 
 robotraconteurlite_status robotraconteurlite_node_send_messageentry_empty_response(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
+    /* cppcheck-suppress constParameterPointer */
     struct robotraconteurlite_messageentry_const_header* request_message_entry_header)
 {
     struct robotraconteurlite_node_send_messageentry_data send_data;
@@ -730,6 +731,7 @@ robotraconteurlite_status robotraconteurlite_node_send_messageentry_empty_respon
 
 robotraconteurlite_status robotraconteurlite_node_begin_send_messageentry_response(
     struct robotraconteurlite_node_send_messageentry_data* send_data,
+    /* cppcheck-suppress constParameterPointer */
     struct robotraconteurlite_messageentry_const_header* request_message_entry_header)
 {
     robotraconteurlite_status rv = -1;
@@ -743,6 +745,7 @@ robotraconteurlite_status robotraconteurlite_node_begin_send_messageentry_respon
 
 robotraconteurlite_status robotraconteurlite_connection_send_messageentry_error_response(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection,
+    /* cppcheck-suppress constParameterPointer */
     struct robotraconteurlite_messageentry_const_header* request_message_entry_header,
     robotraconteurlite_u16 error_code, const char* error_name, const char* error_message)
 {
@@ -863,7 +866,9 @@ robotraconteurlite_status robotraconteurlite_node_receive_messageentry_consume(
 }
 
 robotraconteurlite_status robotraconteurlite_node_split_qualified_type(
+    /* cppcheck-suppress constParameterPointer */
     const struct robotraconteurlite_const_string* qualified_type, struct robotraconteurlite_const_string* service_type,
+    /* cppcheck-suppress constParameterPointer */
     struct robotraconteurlite_const_string* service_entry_type)
 {
     robotraconteurlite_size_t i = 0;
@@ -1551,8 +1556,7 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                 for (i = 0; i < service_object->implemented_qualified_types.len; i++)
                 {
 
-                    if ((service_object->implemented_qualified_types.data[i] == ((char)';')) ||
-                        (i >= service_object->implemented_qualified_types.len))
+                    if (service_object->implemented_qualified_types.data[i] == ((char)';'))
                     {
                         if ((i - k) > 0U)
                         {
@@ -1690,6 +1694,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_event_r
 }
 
 robotraconteurlite_status robotraconteurlite_client_is_connected(struct robotraconteurlite_node* node,
+                                                                 /* cppcheck-suppress constParameterPointer */
                                                                  struct robotraconteurlite_connection* connection)
 {
     ROBOTRACONTEURLITE_UNUSED(node);
@@ -1882,11 +1887,12 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
             }
             }
             break;
+        }
         case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT: {
             /* Ignore heartbeat timeouts */
             return ROBOTRACONTEURLITE_ERROR_RETRY;
         }
-        }
+
         default: {
             return ROBOTRACONTEURLITE_ERROR_UNHANDLED_EVENT;
         }
@@ -2034,6 +2040,7 @@ robotraconteurlite_status robotraconteurlite_client_send_request(
 }
 
 robotraconteurlite_status robotraconteurlite_client_end_request(
+    /* cppcheck-suppress constParameterPointer */
     struct robotraconteurlite_node_send_messageentry_data* send_data, struct robotraconteurlite_event* event)
 {
     if (event->event_type != ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED)
@@ -2326,7 +2333,7 @@ static robotraconteurlite_status robotraconteurlite_node_run_next_event__service
         return robotraconteurlite_node_event_special_request_object_type_name2(event, event->node->services_head);
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CLIENTKEEPALIVEREQ: {
-        robotraconteurlite_status rv = robotraconteurlite_node_send_messageentry_empty_response(
+        rv = robotraconteurlite_node_send_messageentry_empty_response(
             event->node, event->connection, &event->received_message.received_message_entry_header);
         if (RETRY(rv))
         {

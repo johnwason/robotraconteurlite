@@ -27,6 +27,7 @@
 #define FAILED ROBOTRACONTEURLITE_FAILED
 #define RETRY ROBOTRACONTEURLITE_RETRY
 
+/* cppcheck-suppress constParameterPointer */
 robotraconteurlite_status robotraconteurlite_poll_pollfds_add_socket(struct robotraconteurlite_connection_socket* sock,
                                                                      struct robotraconteurlite_pollfd* pollfds,
                                                                      robotraconteurlite_size_t* pollfd_count,

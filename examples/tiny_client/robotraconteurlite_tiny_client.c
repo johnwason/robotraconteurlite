@@ -59,7 +59,7 @@ enum tiny_client_state
     TINY_CLIENT_STATE_ERROR = 1000
 };
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     /* Variable storage */
     struct robotraconteurlite_connection connections_storage[NUM_CONNECTIONS];

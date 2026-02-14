@@ -171,13 +171,13 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_vec(const struct ro
         robotraconteurlite_size_t dest_i_delta = dest->buffer_vec[dest_i].len - dest_i_pos;
         robotraconteurlite_size_t delta = 0;
 
-        if (source_i_delta <= 0U)
+        if (source_i_delta == 0U)
         {
             source_i++;
             source_i_pos = 0;
             continue;
         }
-        if (dest_i_delta <= 0U)
+        if (dest_i_delta == 0U)
         {
             dest_i++;
             dest_i_pos = 0;
@@ -321,13 +321,13 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_vec_ex(
         robotraconteurlite_size_t dest_i_delta = (dest->buffer_vec[dest_i].len * dest_elem_size) - dest_i_byte_pos;
         robotraconteurlite_size_t delta = 0;
 
-        if (source_i_delta <= 0U)
+        if (source_i_delta == 0U)
         {
             source_i++;
             source_i_byte_pos = 0;
             continue;
         }
-        if (dest_i_delta <= 0U)
+        if (dest_i_delta == 0U)
         {
             dest_i++;
             dest_i_byte_pos = 0;
@@ -371,6 +371,7 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_to_mem(
 }
 
 robotraconteurlite_status robotraconteurlite_buffer_vec_copy_from_mem(
+    /* cppcheck-suppress constParameterPointer*/
     struct robotraconteurlite_buffer_vec* dest, robotraconteurlite_size_t dest_pos,
     const robotraconteurlite_byte* source, robotraconteurlite_size_t source_len, robotraconteurlite_size_t source_pos,
     robotraconteurlite_size_t source_elem_size, robotraconteurlite_size_t source_count)

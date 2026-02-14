@@ -402,7 +402,7 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_buffer_recv(
     struct robotraconteurlite_connection* connection, robotraconteurlite_size_t len)
 {
     int last_errno = -1;
-    struct robotraconteurlite_tcp_transport_storage* storage = get_storage(connection);
+    const struct robotraconteurlite_tcp_transport_storage* storage = get_storage(connection);
     if (FLAGS_CHECK(storage->tcp_transport_state, ROBOTRACONTEURLITE_TCP_TRANSPORT_STATE_IS_WEBSOCKET))
     {
         return robotraconteurlite_tcp_connection_buffer_recv_websocket(connection, len);
@@ -477,6 +477,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_buffer_send_w
         {
             storage->send_websocket_header_len += 4U;
             FLAGS_SET(storage->tcp_transport_state, ROBOTRACONTEURLITE_TCP_TRANSPORT_STATE_SEND_WEBSOCKET_ENABLE_MASK);
+            /* cppcheck-suppress knownConditionTrueFalse */
             if (robotraconteurlite_tcp_websocket_random_mask(connection, storage->send_websocket_mask) != 0)
             {
                 return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
@@ -506,8 +507,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_buffer_send_w
     if ((storage->send_websocket_header_len > 0U) &&
         (storage->send_websocket_header_pos < storage->send_websocket_header_len))
     {
-        int last_errno = -1;
-        robotraconteurlite_status rv = robotraconteurlite_tcp_socket_send_nonblocking(
+        rv = robotraconteurlite_tcp_socket_send_nonblocking(
             &connection->head.sock, storage->send_websocket_header_buffer, &storage->send_websocket_header_pos,
             storage->send_websocket_header_len - storage->send_websocket_header_pos, &last_errno);
         if (FAILED(rv))
@@ -556,7 +556,7 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_buffer_send(
     struct robotraconteurlite_connection* connection, robotraconteurlite_size_t len)
 {
     int last_errno = -1;
-    struct robotraconteurlite_tcp_transport_storage* storage = get_storage(connection);
+    const struct robotraconteurlite_tcp_transport_storage* storage = get_storage(connection);
     if (FLAGS_CHECK(storage->tcp_transport_state, ROBOTRACONTEURLITE_TCP_TRANSPORT_STATE_IS_WEBSOCKET))
     {
         return robotraconteurlite_tcp_connection_buffer_send_websocket(connection, len);
@@ -767,7 +767,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_handshake_htt
         /* Check for ending of \r\n\r\n or \n\n or \r\r or \n\r\n\r */
         if (connection->recv_buffer_pos >= 4U)
         {
-            robotraconteurlite_byte* end_minus_4 = &connection->recv_buffer[connection->recv_buffer_pos - 4U];
+            const robotraconteurlite_byte* end_minus_4 = &connection->recv_buffer[connection->recv_buffer_pos - 4U];
             /* cppcheck-suppress [misra-c2012-21.14, misra-c2012-21.16] */
             if ((memcmp(end_minus_4, "\r\n\r\n", 4) == 0) || (memcmp(end_minus_4, "\n\r\n\r", 4) == 0))
             {
@@ -777,7 +777,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_handshake_htt
 
         if (connection->recv_buffer_pos >= 2U)
         {
-            robotraconteurlite_byte* end_minus_2 = &connection->recv_buffer[connection->recv_buffer_pos - 2U];
+            const robotraconteurlite_byte* end_minus_2 = &connection->recv_buffer[connection->recv_buffer_pos - 2U];
             /* cppcheck-suppress [misra-c2012-21.14, misra-c2012-21.16] */
             if ((memcmp(end_minus_2, "\n\n", 2) == 0) || (memcmp(end_minus_2, "\r\r", 2) == 0))
             {
@@ -816,7 +816,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_handshake_ser
     if (connection->send_message_len > 0U)
     {
         int last_errno = -1;
-        robotraconteurlite_status rv = robotraconteurlite_tcp_socket_send_nonblocking(
+        rv = robotraconteurlite_tcp_socket_send_nonblocking(
             &connection->head.sock, connection->send_buffer, &connection->send_buffer_pos,
             connection->send_message_len - connection->send_buffer_pos, &last_errno);
         if (FAILED(rv))
@@ -849,8 +849,8 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_handshake_ser
     if (connection->recv_buffer_pos < 4U)
     {
         int last_errno = -1;
-        robotraconteurlite_status rv = robotraconteurlite_tcp_socket_recv_nonblocking(
-            &connection->head.sock, connection->recv_buffer, &connection->recv_buffer_pos, 4, &last_errno);
+        rv = robotraconteurlite_tcp_socket_recv_nonblocking(&connection->head.sock, connection->recv_buffer,
+                                                            &connection->recv_buffer_pos, 4, &last_errno);
         if (FAILED(rv))
         {
             FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_ERROR);
@@ -947,7 +947,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_handshake_cli
     if (connection->send_message_len > 0U)
     {
         int last_errno = -1;
-        robotraconteurlite_status rv = robotraconteurlite_tcp_socket_send_nonblocking(
+        rv = robotraconteurlite_tcp_socket_send_nonblocking(
             &connection->head.sock, connection->send_buffer, &connection->send_buffer_pos,
             connection->send_message_len - connection->send_buffer_pos, &last_errno);
         if (FAILED(rv))

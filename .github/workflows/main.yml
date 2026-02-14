@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-ubuntu:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v3
     - name: robotraconteur ppa
@@ -115,7 +115,7 @@ jobs:
         cd build
         cmake -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON -DCMAKE_C_FLAGS="-DNDEBUG" \
-        -DCMAKE_C_CPPCHECK="/usr/bin/cppcheck;--enable=warning;--inconclusive;--force;--inline-suppr;--error-exitcode=1;--std=c99;" \
+        -DCMAKE_C_CPPCHECK="/usr/bin/cppcheck;--enable=warning;--enable=style;--inconclusive;--force;--inline-suppr;--error-exitcode=1;--std=c99;--suppress=unreadVariable;--suppress=variableScope" \
         ..
     - name: make
       working-directory: build

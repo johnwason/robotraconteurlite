@@ -392,6 +392,9 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_transpo
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_transport_populate_capabilities(
     struct robotraconteurlite_messageelement_writer* element_writer, robotraconteurlite_u32 capability_flags);
 
+ROBOTRACONTEURLITE_API robotraconteurlite_size_t
+robotraconteurlite_node_events_pending(struct robotraconteurlite_node* node);
+
 #ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_set_services(
     struct robotraconteurlite_node* node, struct robotraconteurlite_node_service* services_head,
@@ -435,6 +438,26 @@ robotraconteurlite_node_service_object_set_ops(struct robotraconteurlite_node_se
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_node_run_next_event(struct robotraconteurlite_node* node, robotraconteurlite_timespec now,
                                        enum robotraconteurlite_event_type* handled_event_type);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_run_next_event2(
+    struct robotraconteurlite_node* node, robotraconteurlite_timespec now, struct robotraconteurlite_event* event);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_size_t
+robotraconteurlite_node_events_drain_pending(struct robotraconteurlite_node* node, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_run_next_event_cycle(
+    struct robotraconteurlite_node* node, robotraconteurlite_timespec now, robotraconteurlite_size_t max_events);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_run_events_drain(
+    struct robotraconteurlite_node* node, robotraconteurlite_timespec now,
+    robotraconteurlite_size_t max_events_per_cycle, robotraconteurlite_size_t max_cycles);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_size_t
+robotraconteurlite_node_events_available(struct robotraconteurlite_node* node, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_run_events_available(
+    struct robotraconteurlite_node* node, robotraconteurlite_timespec now,
+    robotraconteurlite_size_t max_events_per_cycle, robotraconteurlite_size_t max_cycles);
 
 #endif
 

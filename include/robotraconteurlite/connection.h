@@ -475,6 +475,16 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_close(
     struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connections_communicate_drain(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_size_t robotraconteurlite_connections_communicate_drain_pending(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_size_t robotraconteurlite_connections_communicate_available(
+    struct robotraconteurlite_connection_object* connections_head, robotraconteurlite_timespec now);
+
 #endif
 
 #ifdef __cplusplus

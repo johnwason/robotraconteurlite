@@ -331,95 +331,38 @@ int main(int argc, const char* argv[])
     }
 
     printf("robotraconteur_tiny_service started\n");
-
     do
     {
         /* One socket per connection plus acceptor and node. May vary, check documentation */
         struct robotraconteurlite_pollfd pollfds[NUM_CONNECTIONS + 2];
         robotraconteurlite_status rv = -1;
-        robotraconteurlite_timespec next_wake = 0;
 
         robotraconteurlite_clock_gettime(&clock, &now);
 
-        /* Communicate with all connections */
-        if (robotraconteurlite_connections_communicate(&connections_head, now))
-        {
-            printf("Could not communicate with connections\n");
-            return -1;
-        }
-        rv = robotraconteurlite_node_next_wake(&node, now, &next_wake);
+        rv = robotraconteurlite_poll_connections_run(&node, &clock, pollfds, NUM_CONNECTIONS + 2, now + 1000000);
         if (RRLITE_FAILED(rv))
         {
-            printf("Could not get next wake\n");
-            return -1;
+            printf("Run poll connections failed\n");
+            return 1;
         }
 
-        if (next_wake > now)
+        rv = robotraconteurlite_node_run_events_available(&node, now, 100, 10);
+        if (RRLITE_FAILED(rv))
         {
-            rv = robotraconteurlite_connections_prepare_wait(&connections_head, now);
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not add acceptor to poll\n");
-                return -1;
-            }
-
-            rv = robotraconteurlite_poll_connections_next_wake(&connections_head, &clock, pollfds, NUM_CONNECTIONS + 2,
-                                                               next_wake);
-            if (RRLITE_FAILED(rv))
-            {
-                if (signal_received)
-                {
-                    printf("Exiting\n");
-                    return 0;
-                }
-                printf("Could not wait for next wake\n");
-                return -1;
-            }
-            robotraconteurlite_clock_gettime(&clock, &now);
-
-            /* Communicate with all connections */
-            if (robotraconteurlite_connections_communicate(&connections_head, now))
-            {
-                printf("Could not communicate with connections\n");
-                return -1;
-            }
+            printf("Node events failed\n");
+            return 1;
         }
-
-        /* Run the event loop. Exit if no events are available*/
-
-        do
-        {
-            enum robotraconteurlite_event_type handled_event_type = ROBOTRACONTEURLITE_EVENT_TYPE_NOOP;
-            robotraconteurlite_clock_gettime(&clock, &now);
-            rv = robotraconteurlite_node_run_next_event(&node, now, &handled_event_type);
-
-            if (RRLITE_FAILED(rv))
-            {
-                if (rv != ROBOTRACONTEURLITE_ERROR_RETRY)
-                {
-                    printf("Warning: could not handle event\n");
-                }
-            }
-
-            if (handled_event_type == ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE)
-            {
-                break;
-            }
-        } while (1);
 
         if (signal_received)
         {
             break;
         }
-
     } while (1);
 
     robotraconteurlite_clock_gettime(&clock, &now);
 
     /* Close all connection objects */
     robotraconteurlite_connections_close(&connections_head, now);
-
     printf("robotraconteur_tiny_service shut down\n");
-
     return 0;
 }

@@ -17,6 +17,7 @@
 #include "robotraconteurlite/err.h"
 #include "robotraconteurlite/util.h"
 #include "robotraconteurlite/connection.h"
+#include "robotraconteurlite/node.h"
 #include <limits.h>
 
 #define FLAGS_CHECK_ALL ROBOTRACONTEURLITE_FLAGS_CHECK_ALL
@@ -129,3 +130,77 @@ robotraconteurlite_status robotraconteurlite_poll_connections_next_wake(
 
     return robotraconteurlite_poll_pollfds_next_wake(clock, pollfds_storage, pollfd_count, wake_time);
 }
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+robotraconteurlite_status robotraconteurlite_poll_connections_run(struct robotraconteurlite_node* node,
+                                                                  struct robotraconteurlite_clock* clock,
+                                                                  struct robotraconteurlite_pollfd* pollfds_storage,
+                                                                  robotraconteurlite_size_t pollfds_storage_count,
+                                                                  robotraconteurlite_timespec wake_time)
+{
+    robotraconteurlite_timespec now = 0;
+    robotraconteurlite_timespec next_wake = 0;
+    robotraconteurlite_status rv = -1;
+
+    rv = robotraconteurlite_clock_gettime(clock, &now);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    /* Communicate with all connections */
+    rv = robotraconteurlite_connections_communicate(node->connections_head, now);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    if (robotraconteurlite_node_events_pending(node) > 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    rv = robotraconteurlite_node_next_wake(node, now, &next_wake);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    if (wake_time < next_wake)
+    {
+        next_wake = wake_time;
+    }
+
+    if (next_wake > now)
+    {
+        rv = robotraconteurlite_connections_prepare_wait(node->connections_head, now);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+
+        rv = robotraconteurlite_poll_connections_next_wake(node->connections_head, clock, pollfds_storage,
+                                                           pollfds_storage_count, next_wake);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+
+        rv = robotraconteurlite_clock_gettime(clock, &now);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+
+        /* Communicate with all connections */
+        rv = robotraconteurlite_connections_communicate(node->connections_head, now);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+#endif

@@ -1588,6 +1588,25 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request_object_t
                     }
                 }
 
+                if (k < service_object->implemented_qualified_types.len)
+                {
+                    struct robotraconteurlite_const_string o;
+                    struct robotraconteurlite_const_string list_i_str;
+                    char list_i_str_buf[16];
+                    (void)memset(list_i_str_buf, 0, sizeof(list_i_str_buf));
+                    (void)sprintf(list_i_str_buf, "%u", list_i);
+                    o.data = &service_object->implemented_qualified_types.data[k];
+                    o.len = service_object->implemented_qualified_types.len - k;
+                    list_i_str.data = list_i_str_buf;
+                    list_i_str.len = strlen(list_i_str_buf);
+                    rv = robotraconteurlite_messageelement_writer_write_data_string(&nested_element_writer, &list_i_str,
+                                                                                    &o);
+                    if (FAILED(rv))
+                    {
+                        return rv;
+                    }
+                }
+
                 rv = robotraconteurlite_messageelement_writer_end_nested_element(
                     &send_data.element_writer, &nested_element_header, &nested_element_writer);
                 if (FAILED(rv))
@@ -1751,6 +1770,92 @@ static robotraconteurlite_status robotraconteurlite_client_handshake_begin_reque
     return rv;
 }
 
+static robotraconteurlite_status robotraconteurlite_client_verify_objecttype_response(
+    struct robotraconteurlite_messageentry_reader* entry_reader,
+    const struct robotraconteurlite_const_string* expected_type)
+{
+    robotraconteurlite_status rv = -1;
+    struct robotraconteurlite_messageelement_reader element_reader;
+    struct robotraconteurlite_messageelement_reader nested_element_reader;
+    struct robotraconteurlite_string temp_str;
+    struct robotraconteurlite_const_string temp_const_str;
+    char temp_str_buf[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
+    temp_str.data = temp_str_buf;
+    temp_str.len = sizeof(temp_str_buf);
+    (void)memset(temp_str_buf, 0, sizeof(temp_str_buf));
+
+    /* Compare root object type */
+    rv = robotraconteurlite_messageentry_reader_find_element_verify_string_c_str(entry_reader, "objecttype",
+                                                                                 &element_reader, sizeof(temp_str_buf));
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    rv = robotraconteurlite_messageelement_reader_read_data_string(&element_reader, &temp_str);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+
+    robotraconteurlite_string_shallow_copy_from_mutable(&temp_str, &temp_const_str);
+    rv = robotraconteurlite_util_match_string_in_list(expected_type, &temp_const_str);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
+    if (rv == 1U)
+    {
+        return rv;
+    }
+
+    /* Compare root object implements types */
+    rv = robotraconteurlite_messageentry_reader_find_element_c_str(entry_reader, "objectimplements", &element_reader);
+    if (FAILED(rv))
+    {
+        if (rv == ROBOTRACONTEURLITE_ERROR_MESSAGEELEMENT_NOT_FOUND)
+        {
+            return 0;
+        }
+        return rv;
+    }
+    rv = robotraconteurlite_messageelement_reader_begin_read_nested_elements(&element_reader, &nested_element_reader);
+    if (FAILED(rv))
+    {
+        return 0;
+    }
+
+    while (SUCCEEDED(rv))
+    {
+        temp_str.len = sizeof(temp_str_buf);
+        (void)memset(temp_str_buf, 0, sizeof(temp_str_buf));
+        rv = robotraconteurlite_messageelement_reader_read_data_string(&nested_element_reader, &temp_str);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
+
+        robotraconteurlite_string_shallow_copy_from_mutable(&temp_str, &temp_const_str);
+        rv = robotraconteurlite_util_match_string_in_list(expected_type, &temp_const_str);
+        if (rv == 1U)
+        {
+            return rv;
+        }
+
+        rv = robotraconteurlite_messageelement_reader_move_next(&nested_element_reader);
+        if (FAILED(rv))
+        {
+            if (ROBOTRACONTEURLITE_NO_MORE(rv))
+            {
+                break;
+            }
+            return rv;
+        }
+    }
+
+    return 0;
+}
+
 robotraconteurlite_status robotraconteurlite_client_handshake(struct robotraconteurlite_node_client* client,
                                                               struct robotraconteurlite_event* event,
                                                               robotraconteurlite_timespec now)
@@ -1784,7 +1889,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(struct robotracont
         {
         case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED: {
             robotraconteurlite_connection_consume_closed(event->connection);
-            client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_FAILED;
+            client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR;
             return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
         }
         case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_ERROR:
@@ -1844,20 +1949,10 @@ robotraconteurlite_status robotraconteurlite_client_handshake(struct robotracont
                 break;
             }
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT: {
-
-                struct robotraconteurlite_const_string element_name;
-                struct robotraconteurlite_messageelement_reader element_reader;
                 if (/*(event->received_message.received_message_entry_header.request_id != handshake_data->request_id)
                        || */
                     (event->received_message.received_message_entry_header.entry_type !=
                      ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAMERET))
-                {
-                    return robotraconteurlite_client_handshake_error(client);
-                }
-                robotraconteurlite_string_from_c_str("objecttype", &element_name);
-                rv = robotraconteurlite_messageentry_reader_find_element_verify_string(
-                    &event->received_message.entry_reader, &element_name, &element_reader, 128);
-                if (FAILED(rv))
                 {
                     return robotraconteurlite_client_handshake_error(client);
                 }
@@ -1871,9 +1966,25 @@ robotraconteurlite_status robotraconteurlite_client_handshake(struct robotracont
                 {
                     return robotraconteurlite_client_handshake_error(handshake_data);
                 }*/
+                if (client->expected_root_object_type.len > 0)
+                {
+                    rv = robotraconteurlite_client_verify_objecttype_response(&event->received_message.entry_reader,
+                                                                              &client->expected_root_object_type);
+                }
+                else
+                {
+                    rv = 1;
+                }
                 /* Consume event */
                 (void)robotraconteurlite_node_consume_event(event);
-                client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED;
+                if (rv == 1)
+                {
+                    client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED;
+                }
+                else
+                {
+                    client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_INVALID_OBJECT_TYPE;
+                }
                 break;
             }
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT: {

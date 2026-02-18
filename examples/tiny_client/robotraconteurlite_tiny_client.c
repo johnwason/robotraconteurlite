@@ -47,6 +47,7 @@ and RRLITE_SUCCEEDED if Windows support required */
 const robotraconteurlite_u16 default_service_port = 22229;
 const char* default_service_ip_str = "127.0.0.1";
 const char* service_name = "tiny_service";
+const char* expected_root_object_type = "example.tiny_service.tiny_object";
 
 enum tiny_client_state
 {
@@ -177,6 +178,7 @@ int main(int argc, const char* argv[])
     (void)memset(&client, 0, sizeof(client));
     client.node = &node;
     client.service_address = &service_addr;
+    robotraconteurlite_string_from_c_str(expected_root_object_type, &client.expected_root_object_type);
 
     printf("Begin connecting to service\n");
 

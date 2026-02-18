@@ -173,7 +173,7 @@ enum robotraconteurlite_node_client_handshake_state
     ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED,
     ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_COMPLETED,
     ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_FAILED
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_INVALID_OBJECT_TYPE
 };
 
 struct robotraconteurlite_node_client
@@ -186,7 +186,7 @@ struct robotraconteurlite_node_client
     struct robotraconteurlite_connection* client_connection;
     robotraconteurlite_u32 handshake_state;
     robotraconteurlite_u32 handshake_request_id;
-    struct robotraconteurlite_const_string* expected_root_object_type;
+    struct robotraconteurlite_const_string expected_root_object_type;
     struct robotraconteurlite_user_storage* user_storage;
 
 #ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR

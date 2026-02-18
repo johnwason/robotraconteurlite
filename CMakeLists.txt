@@ -34,14 +34,17 @@ endif()
 
 set(ROBOTRACONTEURLITE_SRC
     include/robotraconteurlite/array.h
+    include/robotraconteurlite/clock.h
     include/robotraconteurlite/config.h
+    include/robotraconteurlite/connection.h
     include/robotraconteurlite/err.h
+    include/robotraconteurlite/message_data.h
     include/robotraconteurlite/message.h
     include/robotraconteurlite/node.h
     include/robotraconteurlite/nodeid.h
     include/robotraconteurlite/robotraconteurlite.h
     include/robotraconteurlite/tcp_transport.h
-    include/robotraconteurlite/clock.h
+    include/robotraconteurlite/util.h
     src/array.c
     src/array_types.c
     src/connection.c
@@ -50,7 +53,8 @@ set(ROBOTRACONTEURLITE_SRC
     src/node.c
     src/nodeid.c
     src/tcp_transport.c
-    src/poll.c)
+    src/poll.c
+    src/util.c)
 
 if(ROBOTRACONTEURLITE_POSIX)
     set(ROBOTRACONTEURLITE_SRC ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c

@@ -95,6 +95,10 @@ typedef uint8_t robotraconteurlite_byte;
 #define ROBOTRACONTEURLITE_SIZE_T_MIN 0
 #endif
 
+#ifndef ROBOTRACONTEURLITE_NO_STATUS
+typedef robotraconteurlite_i32 robotraconteurlite_status;
+#endif
+
 #ifndef ROBOTRACONTEURLITE_TRANSPORT_STORAGE_SIZE
 #define ROBOTRACONTEURLITE_TRANSPORT_STORAGE_SIZE 128
 #endif

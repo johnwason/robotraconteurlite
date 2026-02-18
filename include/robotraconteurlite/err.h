@@ -50,8 +50,6 @@
 extern "C" {
 #endif
 
-typedef robotraconteurlite_i32 robotraconteurlite_status;
-
 static robotraconteurlite_i32 robotraconteurlite_is_success(robotraconteurlite_status status)
 {
     return status >= ROBOTRACONTEURLITE_ERROR_SUCCESS;

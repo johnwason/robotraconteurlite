@@ -38,6 +38,11 @@ static robotraconteurlite_u16 robotraconteurlite_util_read_uint16(const void* p)
     return ret;
 }
 
+struct robotraconteurlite_const_string;
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_util_match_string_in_list(
+    const struct robotraconteurlite_const_string* list, const struct robotraconteurlite_const_string* value);
+
 #define ROBOTRACONTEURLITE_FLAGS_CHECK(flags, mask) (((flags) & (mask)) != 0U)
 #define ROBOTRACONTEURLITE_FLAGS_CHECK_ALL(flags, mask) (((flags) & (mask)) == (mask))
 #define ROBOTRACONTEURLITE_FLAGS_SET(flags, mask) ((flags) |= (mask))

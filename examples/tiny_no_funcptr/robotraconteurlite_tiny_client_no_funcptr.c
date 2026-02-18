@@ -70,7 +70,7 @@ int main(int argc, const char* argv[])
     struct robotraconteurlite_nodeid node_id;
     struct robotraconteurlite_addr service_addr;
     struct sockaddr_in* service_sockaddr = NULL;
-    struct robotraconteurlite_node_client connect_data;
+    struct robotraconteurlite_node_client client;
     robotraconteurlite_timespec now = 0;
     struct robotraconteurlite_clock rr_clock;
     robotraconteurlite_status rv = -1;
@@ -174,14 +174,14 @@ int main(int argc, const char* argv[])
         robotraconteurlite_string_from_c_str("/", &service_addr.http_path);
     }
 
-    (void)memset(&connect_data, 0, sizeof(connect_data));
-    connect_data.node = &node;
-    connect_data.service_address = &service_addr;
+    (void)memset(&client, 0, sizeof(client));
+    client.node = &node;
+    client.service_address = &service_addr;
 
     printf("Begin connecting to service\n");
 
     robotraconteurlite_clock_gettime(&rr_clock, &now);
-    rv = robotraconteurlite_tcp_connect_service(&connect_data, now);
+    rv = robotraconteurlite_tcp_connect_service(&client, now);
 
     if (RRLITE_FAILED(rv))
     {
@@ -189,12 +189,8 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    connection = connect_data.client_connection;
+    connection = client.client_connection;
     {
-        struct robotraconteurlite_client_handshake_data handshake_data;
-        (void)memset(&handshake_data, 0, sizeof(handshake_data));
-        handshake_data.node = &node;
-        handshake_data.connection = connection;
         while (1)
         {
 
@@ -206,7 +202,7 @@ int main(int argc, const char* argv[])
                 printf("Could not get next event\n");
                 return -1;
             }
-            rv = robotraconteurlite_client_handshake(&handshake_data, &event, now);
+            rv = robotraconteurlite_client_handshake(&client, &event, now);
             if (RRLITE_SUCCEEDED(rv))
             {
                 break;

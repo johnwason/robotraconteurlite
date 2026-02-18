@@ -1717,50 +1717,49 @@ robotraconteurlite_status robotraconteurlite_client_is_connected(struct robotrac
 }
 
 static robotraconteurlite_status robotraconteurlite_client_handshake_error(
-    struct robotraconteurlite_client_handshake_data* handshake_data)
+    struct robotraconteurlite_node_client* client)
 {
-    if (robotraconteurlite_connection_close(handshake_data->connection) != 0)
+    if (robotraconteurlite_connection_close(client->client_connection) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
-    handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR;
+    client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR;
     /* Error cannot be cleared or consumed */
     return ROBOTRACONTEURLITE_ERROR_RETRY;
 }
 
 static robotraconteurlite_status robotraconteurlite_client_handshake_handle_error(
-    struct robotraconteurlite_client_handshake_data* handshake_data, robotraconteurlite_status rv)
+    struct robotraconteurlite_node_client* client, robotraconteurlite_status rv)
 {
     if (RETRY(rv))
     {
         return ROBOTRACONTEURLITE_ERROR_RETRY;
     }
-    return robotraconteurlite_client_handshake_error(handshake_data);
+    return robotraconteurlite_client_handshake_error(client);
 }
 
 static robotraconteurlite_status robotraconteurlite_client_handshake_begin_request(
-    struct robotraconteurlite_client_handshake_data* handshake_data,
-    struct robotraconteurlite_node_send_messageentry_data* send_data, robotraconteurlite_u16 entry_type,
-    const char* membername)
+    struct robotraconteurlite_node_client* client, struct robotraconteurlite_node_send_messageentry_data* send_data,
+    robotraconteurlite_u16 entry_type, const char* membername)
 {
     robotraconteurlite_status rv = -1;
     (void)memset(send_data, 0, sizeof(struct robotraconteurlite_node_send_messageentry_data));
-    send_data->node = handshake_data->node;
-    send_data->connection = handshake_data->connection;
+    send_data->node = client->node;
+    send_data->connection = client->client_connection;
     rv = robotraconteurlite_client_begin_request(send_data, entry_type, membername, NULL);
-    handshake_data->request_id = send_data->message_entry_header->request_id;
+    client->handshake_request_id = send_data->message_entry_header->request_id;
     return rv;
 }
 
-robotraconteurlite_status robotraconteurlite_client_handshake(
-    struct robotraconteurlite_client_handshake_data* handshake_data, struct robotraconteurlite_event* event,
-    robotraconteurlite_timespec now)
+robotraconteurlite_status robotraconteurlite_client_handshake(struct robotraconteurlite_node_client* client,
+                                                              struct robotraconteurlite_event* event,
+                                                              robotraconteurlite_timespec now)
 {
     robotraconteurlite_status rv = -1;
     ROBOTRACONTEURLITE_UNUSED(now);
 
     if ((event->event_type != ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE) &&
-        (event->connection != handshake_data->connection))
+        (event->connection != client->client_connection))
     {
         return ROBOTRACONTEURLITE_ERROR_UNHANDLED_EVENT;
     }
@@ -1774,7 +1773,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
         }
         else if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
         else
         {
@@ -1785,13 +1784,13 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
         {
         case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED: {
             robotraconteurlite_connection_consume_closed(event->connection);
-            handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_FAILED;
+            client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_FAILED;
             return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
         }
         case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_ERROR:
         case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT: {
             (void)robotraconteurlite_connection_close(event->connection);
-            handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR;
+            client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR;
             /* Error cannot be cleared or consumed */
             return ROBOTRACONTEURLITE_ERROR_RETRY;
         }
@@ -1806,7 +1805,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
             break;
         }
         case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_SEND_COMPLETE: {
-            switch (handshake_data->handshake_state)
+            switch (client->handshake_state)
             {
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT:
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT:
@@ -1821,7 +1820,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
             break;
         }
         case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED: {
-            switch (handshake_data->handshake_state)
+            switch (client->handshake_state)
             {
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT: {
                 if (/*(event->received_message.received_message_entry_header.request_id != handshake_data->request_id)
@@ -1829,18 +1828,18 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
                     (event->received_message.received_message_entry_header.entry_type !=
                      ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_STREAMOPRET))
                 {
-                    return robotraconteurlite_client_handshake_error(handshake_data);
+                    return robotraconteurlite_client_handshake_error(client);
                 }
                 /* Set to connection "connected" connection_state flag if still connecting */
-                if (FLAGS_CHECK(handshake_data->connection->connection_state,
+                if (FLAGS_CHECK(client->client_connection->connection_state,
                                 ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING))
                 {
-                    FLAGS_CLEAR(handshake_data->connection->connection_state,
+                    FLAGS_CLEAR(client->client_connection->connection_state,
                                 ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING);
-                    FLAGS_SET(handshake_data->connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED);
+                    FLAGS_SET(client->client_connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED);
                 }
 
-                handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_COMPLETED;
+                client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_COMPLETED;
                 (void)robotraconteurlite_node_consume_event(event);
                 break;
             }
@@ -1853,37 +1852,39 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
                     (event->received_message.received_message_entry_header.entry_type !=
                      ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAMERET))
                 {
-                    return robotraconteurlite_client_handshake_error(handshake_data);
+                    return robotraconteurlite_client_handshake_error(client);
                 }
                 robotraconteurlite_string_from_c_str("objecttype", &element_name);
                 rv = robotraconteurlite_messageentry_reader_find_element_verify_string(
                     &event->received_message.entry_reader, &element_name, &element_reader, 128);
                 if (FAILED(rv))
                 {
-                    return robotraconteurlite_client_handshake_error(handshake_data);
+                    return robotraconteurlite_client_handshake_error(client);
                 }
 
-                handshake_data->root_object_type.data = handshake_data->root_object_type_char;
-                handshake_data->root_object_type.len = sizeof(handshake_data->root_object_type_char);
+                /* TODO: verify object type against expected type */
+                /*client->root_object_type.data = client->root_object_type_char;
+                client->root_object_type.len = sizeof(handshake_data->root_object_type_char);
                 rv = robotraconteurlite_messageelement_reader_read_data_string(&element_reader,
                                                                                &handshake_data->root_object_type);
                 if (FAILED(rv))
                 {
                     return robotraconteurlite_client_handshake_error(handshake_data);
-                }
+                }*/
                 /* Consume event */
                 (void)robotraconteurlite_node_consume_event(event);
-                handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED;
+                client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED;
                 break;
             }
             case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT: {
-                if ((event->received_message.received_message_entry_header.request_id != handshake_data->request_id) ||
+                if ((event->received_message.received_message_entry_header.request_id !=
+                     client->handshake_request_id) ||
                     (event->received_message.received_message_entry_header.entry_type !=
                      ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CONNECTCLIENTRET))
                 {
-                    return robotraconteurlite_client_handshake_error(handshake_data);
+                    return robotraconteurlite_client_handshake_error(client);
                 }
-                handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED;
+                client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED;
                 (void)robotraconteurlite_node_consume_event(event);
                 break;
             }
@@ -1909,7 +1910,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
         (void)robotraconteurlite_node_consume_event(event);
     }
 
-    switch (handshake_data->handshake_state)
+    switch (client->handshake_state)
     {
     /*case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_INIT:
     {
@@ -1925,21 +1926,21 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_INIT: {
         struct robotraconteurlite_node_send_messageentry_data send_data;
         robotraconteurlite_u32 old_connection_state = 0;
-        if (handshake_data->connection->local_endpoint == 0U)
+        if (client->client_connection->local_endpoint == 0U)
         {
-            handshake_data->connection->local_endpoint = rand();
+            client->client_connection->local_endpoint = rand();
         }
-        handshake_data->connection->last_request_id = 100 + (rand() % 100000);
+        client->client_connection->last_request_id = 100 + (rand() % 100000);
         /* Spoof being connected to avoid error... */
-        old_connection_state = handshake_data->connection->connection_state;
-        FLAGS_CLEAR(handshake_data->connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING);
-        FLAGS_SET(handshake_data->connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED);
+        old_connection_state = client->client_connection->connection_state;
+        FLAGS_CLEAR(client->client_connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING);
+        FLAGS_SET(client->client_connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED);
         rv = robotraconteurlite_client_handshake_begin_request(
-            handshake_data, &send_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_STREAMOP, "CreateConnection");
-        handshake_data->connection->connection_state = old_connection_state;
+            client, &send_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_STREAMOP, "CreateConnection");
+        client->client_connection->connection_state = old_connection_state;
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
 
         rv = robotraconteurlite_node_transport_populate_capabilities(
@@ -1947,16 +1948,16 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
                                         ROBOTRACONTEURLITE_CONNECTION_PARSE_CAPABILITY_MESSAGE4));
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
 
         rv = robotraconteurlite_node_end_send_messageentry(&send_data);
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
 
-        handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT;
+        client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT;
         return ROBOTRACONTEURLITE_ERROR_RETRY;
     }
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT: {
@@ -1965,18 +1966,18 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_COMPLETED: {
         struct robotraconteurlite_node_send_messageentry_data send_data;
         rv = robotraconteurlite_client_handshake_begin_request(
-            handshake_data, &send_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME, NULL);
+            client, &send_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_OBJECTTYPENAME, NULL);
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
         rv = robotraconteurlite_node_end_send_messageentry(&send_data);
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
 
-        handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT;
+        client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT;
         return ROBOTRACONTEURLITE_ERROR_RETRY;
     }
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT: {
@@ -1984,30 +1985,30 @@ robotraconteurlite_status robotraconteurlite_client_handshake(
     }
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED: {
         struct robotraconteurlite_node_send_messageentry_data send_data;
-        rv = robotraconteurlite_client_handshake_begin_request(handshake_data, &send_data,
+        rv = robotraconteurlite_client_handshake_begin_request(client, &send_data,
                                                                ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_CONNECTCLIENT, NULL);
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
         rv = robotraconteurlite_node_end_send_messageentry(&send_data);
         if (FAILED(rv))
         {
-            return robotraconteurlite_client_handshake_handle_error(handshake_data, rv);
+            return robotraconteurlite_client_handshake_handle_error(client, rv);
         }
 
-        handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT;
+        client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT;
         return ROBOTRACONTEURLITE_ERROR_RETRY;
     }
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT: {
         return ROBOTRACONTEURLITE_ERROR_RETRY;
     }
     case ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED: {
-        handshake_data->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_COMPLETED;
+        client->handshake_state = ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_COMPLETED;
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
     default: {
-        return robotraconteurlite_client_handshake_error(handshake_data);
+        return robotraconteurlite_client_handshake_error(client);
     }
     }
 }

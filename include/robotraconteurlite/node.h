@@ -161,6 +161,21 @@ struct robotraconteurlite_node_client_ops;
 struct robotraconteurlite_node_request_ops;
 #endif
 
+enum robotraconteurlite_node_client_handshake_state
+{
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_INIT = 0,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTED,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_COMPLETED,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_COMPLETED,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR,
+    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_FAILED
+};
+
 struct robotraconteurlite_node_client
 {
     struct robotraconteurlite_node_client* prev;
@@ -169,6 +184,9 @@ struct robotraconteurlite_node_client
     struct robotraconteurlite_addr* service_address;
     robotraconteurlite_timespec now;
     struct robotraconteurlite_connection* client_connection;
+    robotraconteurlite_u32 handshake_state;
+    robotraconteurlite_u32 handshake_request_id;
+    struct robotraconteurlite_const_string* expected_root_object_type;
     struct robotraconteurlite_user_storage* user_storage;
 
 #ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
@@ -201,33 +219,8 @@ struct robotraconteurlite_event
     robotraconteurlite_size_t events_serviced;
 };
 
-enum robotraconteurlite_client_handshake_state
-{
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_INIT = 0,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTED,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_SENT,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CREATECONNECTION_COMPLETED,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_SENT,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_OBJECTTYPE_COMPLETED,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_SENT,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_CONNECTCLIENT_COMPLETED,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_COMPLETED,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_ERROR,
-    ROBOTRACONTEURLITE_CLIENT_HANDSHAKE_FAILED
-};
-
 #define ROBOTRACONTEURLITE_CONNECTION_PARSE_CAPABILITY_MESSAGE2 0x1U
 #define ROBOTRACONTEURLITE_CONNECTION_PARSE_CAPABILITY_MESSAGE4 0x2U
-
-struct robotraconteurlite_client_handshake_data
-{
-    struct robotraconteurlite_node* node;
-    struct robotraconteurlite_connection* connection;
-    robotraconteurlite_u32 handshake_state;
-    robotraconteurlite_u32 request_id;
-    struct robotraconteurlite_string root_object_type;
-    char root_object_type_char[ROBOTRACONTEURLITE_MESSAGE_STR_MAX_SIZE];
-};
 
 enum robotraconteurlite_node_service_event_type
 {
@@ -397,7 +390,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_is_co
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status
-robotraconteurlite_client_handshake(struct robotraconteurlite_client_handshake_data* handshake_data,
+robotraconteurlite_client_handshake(struct robotraconteurlite_node_client* client,
                                     struct robotraconteurlite_event* event, robotraconteurlite_timespec now);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_begin_request(

@@ -70,7 +70,7 @@ int main(int argc, const char* argv[])
     struct robotraconteurlite_nodeid node_id;
     struct robotraconteurlite_addr service_addr;
     struct sockaddr_in* service_sockaddr = NULL;
-    struct robotraconteurlite_tcp_connect_service_data connect_data;
+    struct robotraconteurlite_node_client connect_data;
     robotraconteurlite_timespec now = 0;
     struct robotraconteurlite_clock rr_clock;
     robotraconteurlite_status rv = -1;
@@ -175,7 +175,7 @@ int main(int argc, const char* argv[])
     }
 
     (void)memset(&connect_data, 0, sizeof(connect_data));
-    connect_data.connections_head = &connections_head;
+    connect_data.node = &node;
     connect_data.service_address = &service_addr;
 
     printf("Begin connecting to service\n");
@@ -189,7 +189,7 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    connection = connect_data.client_out;
+    connection = connect_data.client_connection;
     {
         struct robotraconteurlite_client_handshake_data handshake_data;
         (void)memset(&handshake_data, 0, sizeof(handshake_data));

@@ -143,6 +143,7 @@ struct robotraconteurlite_connection_object
 };
 
 struct robotraconteurlite_node_service;
+struct robotraconteurlite_node_client;
 
 /* NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding) */
 struct robotraconteurlite_connection
@@ -194,6 +195,9 @@ struct robotraconteurlite_connection
 
     /* Storage for associated service */
     struct robotraconteurlite_node_service* service;
+
+    /* Storage for associated client */
+    struct robotraconteurlite_node_client* client;
 };
 
 struct robotraconteurlite_connection_acceptor

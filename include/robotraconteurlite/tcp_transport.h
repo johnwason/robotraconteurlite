@@ -74,14 +74,6 @@ struct robotraconteurlite_tcp_transport_storage
     robotraconteurlite_u8 send_websocket_mask[ROBOTRACONTEURLITE_WEBSOCKET_MASK_SIZE];
 };
 
-struct robotraconteurlite_tcp_connect_service_data
-{
-    struct robotraconteurlite_connection_object* connections_head;
-    struct robotraconteurlite_addr* service_address;
-    robotraconteurlite_timespec now;
-    struct robotraconteurlite_connection* client_out;
-};
-
 struct sockaddr_storage;
 
 ROBOTRACONTEURLITE_API void robotraconteurlite_tcp_acceptor_construct(
@@ -138,7 +130,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_tcp_connections_prepare_wait(struct robotraconteurlite_connection_object* connection_head);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_tcp_connect_service(
-    struct robotraconteurlite_tcp_connect_service_data* connect_data, robotraconteurlite_timespec now);
+    struct robotraconteurlite_node_client* connect_data, robotraconteurlite_timespec now);
 
 /* TCP socket functions */
 

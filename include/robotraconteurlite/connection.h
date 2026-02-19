@@ -48,6 +48,9 @@
 #define ROBOTRACONTEURLITE_STATUS_FLAGS_MESSAGE_SENT_CONSUMED 0x40000U
 #define ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTED_CONSUMED 0x80000U
 #define ROBOTRACONTEURLITE_STATUS_FLAGS_SEND_MESSAGE4 0x100000U
+#define ROBOTRACONTEURLITE_STATUS_FLAGS_CLOSE_NOTIFIED 0x200000U
+#define ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED 0x400000U
+#define ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED_CONSUMED 0x800000U
 
 /* robotraconteurlite_connection_acceptor_status_flags */
 #define ROBOTRACONTEURLITE_CONNECTION_ACCEPTOR_STATUS_FLAGS_NULL 0U
@@ -375,6 +378,29 @@ static int robotraconteurlite_connection_is_heartbeat_timeout(const struct robot
 static int robotraconteurlite_connection_is_idle(const struct robotraconteurlite_connection* connection)
 {
     return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_IDLE);
+}
+
+static int robotraconteurlite_connection_is_client_socket_connected(
+    const struct robotraconteurlite_connection* connection)
+{
+    return ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
+                                          ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED);
+}
+
+static int robotraconteurlite_connection_is_client_socket_connected_event(
+    const struct robotraconteurlite_connection* connection)
+{
+    return (ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
+                                           ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED)) &&
+           (!ROBOTRACONTEURLITE_FLAGS_CHECK(connection->connection_state,
+                                            ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED_CONSUMED));
+}
+
+static void robotraconteurlite_connection_consume_client_socket_connected_event(
+    struct robotraconteurlite_connection* connection)
+{
+    ROBOTRACONTEURLITE_FLAGS_SET(connection->connection_state,
+                                 ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED_CONSUMED);
 }
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status

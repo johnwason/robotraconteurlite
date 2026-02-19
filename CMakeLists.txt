@@ -54,7 +54,8 @@ set(ROBOTRACONTEURLITE_SRC
     src/nodeid.c
     src/tcp_transport.c
     src/poll.c
-    src/util.c)
+    src/util.c
+    src/clock_util.c)
 
 if(ROBOTRACONTEURLITE_POSIX)
     set(ROBOTRACONTEURLITE_SRC ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c

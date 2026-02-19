@@ -207,7 +207,7 @@ int main(int argc, const char* argv[])
             {
                 break;
             }
-            if (RETRY(rv))
+            if (RETRY(rv) || rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
             {
 #ifndef _WIN32
                 usleep(1000);
@@ -236,8 +236,8 @@ int main(int argc, const char* argv[])
             printf("Sending get_d1\n");
             request_data.node = &node;
             request_data.connection = connection;
-            rv = robotraconteurlite_client_send_empty_request(
-                &request_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ, "d1", NULL);
+            rv = robotraconteurlite_client_send_empty_request_c_str(
+                NULL, &request_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ, "d1", NULL, NULL);
             if (RRLITE_FAILED(rv))
             {
                 if (RETRY(rv))
@@ -257,8 +257,8 @@ int main(int argc, const char* argv[])
             printf("Sending set_d1\n");
             request_data.node = &node;
             request_data.connection = connection;
-            rv = robotraconteurlite_client_begin_request(
-                &request_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ, "d1", NULL);
+            rv = robotraconteurlite_client_begin_request_c_str(
+                NULL, &request_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ, "d1", NULL, NULL);
 
             if (RRLITE_FAILED(rv))
             {
@@ -279,7 +279,7 @@ int main(int argc, const char* argv[])
                 return -1;
             }
 
-            rv = robotraconteurlite_client_send_request(&request_data);
+            rv = robotraconteurlite_client_send_request(&request_data, NULL);
             if (RRLITE_FAILED(rv))
             {
                 if (RETRY(rv))

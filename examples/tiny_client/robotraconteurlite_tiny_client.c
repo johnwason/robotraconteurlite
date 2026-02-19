@@ -49,16 +49,19 @@ const char* default_service_ip_str = "127.0.0.1";
 const char* service_name = "tiny_service";
 const char* expected_root_object_type = "example.tiny_service.tiny_object";
 
-enum tiny_client_state
+struct tiny_client_data
 {
-    TINY_CLIENT_STATE_INIT = 0,
-    TINY_CLIENT_STATE_GET_D1_SENT = 1,
-    TINY_CLIENT_STATE_GET_D1_RECEIVED = 2,
-    TINY_CLIENT_STATE_SET_D1_SENT = 3,
-    TINY_CLIENT_STATE_SET_D1_RECEIVED = 4,
-    TINY_CLIENT_STATE_DONE = 5,
-    TINY_CLIENT_STATE_ERROR = 1000
+    struct robotraconteurlite_node_client* client;
+    robotraconteurlite_i32 keep_going;
+    robotraconteurlite_i32 done;
 };
+
+static void client_connected(struct robotraconteurlite_node_client_event* event);
+static void client_disconnected(struct robotraconteurlite_node_client_event* event);
+
+const struct robotraconteurlite_node_client_ops client_ops = {client_connected, client_disconnected, NULL, NULL, NULL};
+
+struct robotraconteurlite_clock rr_clock;
 
 int main(int argc, const char* argv[])
 {
@@ -66,22 +69,17 @@ int main(int argc, const char* argv[])
     struct robotraconteurlite_connection connections_storage[NUM_CONNECTIONS];
     robotraconteurlite_byte connection_buffers[NUM_CONNECTIONS * 2 * CONNECTION_BUFFER_SIZE];
     struct robotraconteurlite_connection_object connections_head;
-    struct robotraconteurlite_connection* connection = NULL;
     struct robotraconteurlite_node node;
     struct robotraconteurlite_nodeid node_id;
     struct robotraconteurlite_addr service_addr;
     struct sockaddr_in* service_sockaddr = NULL;
     struct robotraconteurlite_node_client client;
     robotraconteurlite_timespec now = 0;
-    struct robotraconteurlite_clock rr_clock;
     robotraconteurlite_status rv = -1;
-    struct robotraconteurlite_event event;
     struct robotraconteurlite_const_string nodename_str;
-    robotraconteurlite_u64 end_time = 0;
-    enum tiny_client_state state = TINY_CLIENT_STATE_INIT;
-    struct robotraconteurlite_node_send_messageentry_data request_data;
-
-    robotraconteurlite_double d1_set_val = 42.2;
+    struct tiny_client_data data;
+    struct robotraconteurlite_user_storage data_storage;
+    struct robotraconteurlite_node_request requests_head;
 
     const char* service_ip_str = NULL;
     robotraconteurlite_u16 service_port = 0;
@@ -154,6 +152,8 @@ int main(int argc, const char* argv[])
     /* Initialize the node */
     robotraconteurlite_string_from_c_str("tiny_client", &nodename_str);
     robotraconteurlite_node_init(&node, &node_id, &nodename_str, &connections_head);
+    robotraconteurlite_node_request_list_head_construct(&requests_head);
+    robotraconteurlite_node_set_requests_head(&node, &requests_head);
 
     /* Connect to the service */
     (void)memset(&service_addr, 0, sizeof(service_addr));
@@ -175,10 +175,19 @@ int main(int argc, const char* argv[])
         robotraconteurlite_string_from_c_str("/", &service_addr.http_path);
     }
 
+    (void)memset(&data, 0, sizeof(data));
+
     (void)memset(&client, 0, sizeof(client));
     client.node = &node;
     client.service_address = &service_addr;
     robotraconteurlite_string_from_c_str(expected_root_object_type, &client.expected_root_object_type);
+    data.client = &client;
+    data.keep_going = 1;
+    (void)memset(&data_storage, 0, sizeof(data_storage));
+    data_storage.user_data = &data;
+    client.user_storage = &data_storage;
+
+    robotraconteurlite_node_client_set_ops(&client, &client_ops);
 
     printf("Begin connecting to service\n");
 
@@ -191,319 +200,201 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    connection = client.client_connection;
+    while (data.keep_going)
     {
-        while (1)
-        {
+        struct robotraconteurlite_pollfd pollfds[NUM_CONNECTIONS + 2];
+        robotraconteurlite_status rv = -1;
 
-            robotraconteurlite_clock_gettime(&rr_clock, &now);
-            robotraconteurlite_connections_communicate(&connections_head, now);
-            rv = robotraconteurlite_node_next_event(&node, &event, now);
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not get next event\n");
-                return -1;
-            }
-            rv = robotraconteurlite_client_handshake(&client, &event, now);
-            if (RRLITE_SUCCEEDED(rv))
-            {
-                break;
-            }
-            if (RETRY(rv))
-            {
-#ifndef _WIN32
-                usleep(1000);
-#else
-                Sleep(1);
-#endif
-                continue;
-            }
-            printf("Could not handshake with service\n");
-            return -1;
+        robotraconteurlite_clock_gettime(&rr_clock, &now);
+
+        rv = robotraconteurlite_poll_connections_run(&node, &rr_clock, pollfds, NUM_CONNECTIONS + 2, now + 1000000);
+        if (RRLITE_FAILED(rv))
+        {
+            printf("Run poll connections failed\n");
+            return 1;
+        }
+
+        robotraconteurlite_clock_gettime(&rr_clock, &now);
+        rv = robotraconteurlite_node_run_events_available(&node, now, 100, 10);
+        if (RRLITE_FAILED(rv))
+        {
+            printf("Node events failed\n");
+            return 1;
         }
     }
-
-    printf("Connection to service complete!\n");
-
-    end_time = now + 30000;
-
-    while (now < end_time && state != TINY_CLIENT_STATE_ERROR && state != TINY_CLIENT_STATE_DONE)
-    {
-
-        /* Run client */
-        switch (state)
-        {
-        case TINY_CLIENT_STATE_INIT: {
-            (void)memset(&request_data, 0, sizeof(request_data));
-            printf("Sending get_d1\n");
-            request_data.node = &node;
-            request_data.connection = connection;
-            rv = robotraconteurlite_client_send_empty_request(
-                &request_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ, "d1", NULL);
-            if (RRLITE_FAILED(rv))
-            {
-                if (RETRY(rv))
-                {
-                    printf("Could not send get_d1, retrying\n");
-                    continue;
-                }
-                printf("Could not send get_d1\n");
-                return -1;
-            }
-            state = TINY_CLIENT_STATE_GET_D1_SENT;
-            break;
-        }
-        case TINY_CLIENT_STATE_GET_D1_RECEIVED: {
-            struct robotraconteurlite_const_string element_name;
-            (void)memset(&request_data, 0, sizeof(request_data));
-            printf("Sending set_d1\n");
-            request_data.node = &node;
-            request_data.connection = connection;
-            rv = robotraconteurlite_client_begin_request(
-                &request_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ, "d1", NULL);
-
-            if (RRLITE_FAILED(rv))
-            {
-                if (RETRY(rv))
-                {
-                    printf("Could not send set_d1, retrying\n");
-                    continue;
-                }
-                printf("Could not send set_d1\n");
-                return -1;
-            }
-            /* Write d1 value to the message */
-            robotraconteurlite_string_from_c_str("value", &element_name);
-            if (robotraconteurlite_messageelement_writer_write_double(&request_data.element_writer, &element_name,
-                                                                      d1_set_val))
-            {
-                printf("Could not write double\n");
-                return -1;
-            }
-
-            rv = robotraconteurlite_client_send_request(&request_data);
-            if (RRLITE_FAILED(rv))
-            {
-                if (RETRY(rv))
-                {
-                    printf("Could not send set_d1, retrying\n");
-                    continue;
-                }
-                printf("Could not send set_d1\n");
-                return -1;
-            }
-
-            state = TINY_CLIENT_STATE_SET_D1_SENT;
-            break;
-        }
-        case TINY_CLIENT_STATE_SET_D1_RECEIVED: {
-            printf("Client communication done!\n");
-            state = TINY_CLIENT_STATE_DONE;
-            break;
-        }
-        default: {
-            break;
-        }
-        }
-
-        do
-        {
-            robotraconteurlite_clock_gettime(&rr_clock, &now);
-            rv = robotraconteurlite_connections_communicate(&connections_head, now);
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not communicate with connections\n");
-                return -1;
-            }
-            if (state == TINY_CLIENT_STATE_SET_D1_SENT || state == TINY_CLIENT_STATE_GET_D1_SENT)
-            {
-                /* Only expect to wait in these states */
-
-                /* One socket per connection plus acceptor and node. May vary, check documentation */
-                struct robotraconteurlite_pollfd pollfds[NUM_CONNECTIONS + 2];
-                robotraconteurlite_timespec next_wake = 0;
-                rv = robotraconteurlite_node_next_wake(&node, now, &next_wake);
-                if (RRLITE_FAILED(rv))
-                {
-                    printf("Could not get next wake\n");
-                    return -1;
-                }
-
-                if (next_wake > now)
-                {
-                    rv = robotraconteurlite_connections_prepare_wait(&connections_head, now);
-                    if (RRLITE_FAILED(rv))
-                    {
-                        printf("Could not add connections to poll\n");
-                        return -1;
-                    }
-
-                    rv = robotraconteurlite_poll_connections_next_wake(&connections_head, &rr_clock, pollfds,
-                                                                       NUM_CONNECTIONS + 2, next_wake);
-                    if (RRLITE_FAILED(rv))
-                    {
-                        printf("Could not wait for next wake\n");
-                        return -1;
-                    }
-                    robotraconteurlite_clock_gettime(&rr_clock, &now);
-                    rv = robotraconteurlite_connections_communicate(&connections_head, now);
-                    if (RRLITE_FAILED(rv))
-                    {
-                        printf("Could not communicate with connections\n");
-                        return -1;
-                    }
-                }
-            }
-            /* get next event */
-
-            rv = robotraconteurlite_node_next_event(&node, &event, now);
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not get next event\n");
-                return -1;
-            }
-
-            rv = robotraconteurlite_node_event_special_request(&event);
-            if (rv == ROBOTRACONTEURLITE_ERROR_CONSUMED)
-            {
-                continue;
-            }
-
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not handle special request\n");
-                return -1;
-            }
-
-            /* Handle event */
-            switch (event.event_type)
-            {
-            case ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_RECEIVED: {
-                switch (state)
-                {
-                case TINY_CLIENT_STATE_GET_D1_SENT: {
-                    rv = robotraconteurlite_client_end_request(&request_data, &event);
-                    switch (rv)
-                    {
-                    case ROBOTRACONTEURLITE_ERROR_SUCCESS: {
-                        struct robotraconteurlite_messageelement_reader reader;
-                        struct robotraconteurlite_const_string element_name;
-                        robotraconteurlite_double d1_val = 0.0;
-
-                        printf("Received get_d1 response\n");
-                        state = TINY_CLIENT_STATE_GET_D1_RECEIVED;
-
-                        /* Read d1 value from the message */
-                        robotraconteurlite_string_from_c_str("value", &element_name);
-                        if (robotraconteurlite_messageentry_reader_find_element_verify_scalar(
-                                &event.received_message.entry_reader, &element_name, &reader,
-                                ROBOTRACONTEURLITE_DATATYPE_DOUBLE))
-                        {
-                            printf("Could not find element\n");
-                            return -1;
-                        }
-                        if (robotraconteurlite_messageelement_reader_read_data_double(&reader, &d1_val))
-                        {
-                            printf("Could not read double\n");
-                            return -1;
-                        }
-
-                        printf("Got d1 value: %f\n", d1_val);
-                        break;
-                    }
-                    case ROBOTRACONTEURLITE_ERROR_UNHANDLED_EVENT: {
-                        printf("Unexpected message received!\n");
-                        break;
-                    }
-                    case ROBOTRACONTEURLITE_ERROR_REQUEST_REMOTE_ERROR: {
-                        state = TINY_CLIENT_STATE_ERROR;
-                        printf("Remote error received!\n");
-                        break;
-                    }
-                    default: {
-                        printf("Error ending request\n");
-                        return -1;
-                    }
-                    }
-                    break;
-                }
-                case TINY_CLIENT_STATE_SET_D1_SENT: {
-                    rv = robotraconteurlite_client_end_request(&request_data, &event);
-                    switch (rv)
-                    {
-                    case ROBOTRACONTEURLITE_ERROR_SUCCESS: {
-                        printf("Received set_d1 response\n");
-                        state = TINY_CLIENT_STATE_SET_D1_RECEIVED;
-                        break;
-                    }
-                    case ROBOTRACONTEURLITE_ERROR_UNHANDLED_EVENT: {
-                        printf("Unexpected message received!\n");
-                        break;
-                    }
-                    case ROBOTRACONTEURLITE_ERROR_REQUEST_REMOTE_ERROR: {
-                        state = TINY_CLIENT_STATE_ERROR;
-                        printf("Remote error received!\n");
-                        break;
-                    }
-                    default: {
-                        printf("Error ending request\n");
-                        return -1;
-                    }
-                    }
-                    break;
-                }
-                default: {
-                    printf("Unexpected message received!\n");
-                    break;
-                }
-                }
-                robotraconteurlite_node_consume_event(&event);
-                break;
-            }
-            case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_ERROR: {
-                robotraconteurlite_connection_close(event.connection);
-                robotraconteurlite_node_consume_event(&event);
-                break;
-            }
-            case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLOSED: {
-                printf("Connection error\n");
-                robotraconteurlite_node_consume_event(&event);
-                return -1;
-            }
-            case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT: {
-                printf("Connection heartbeat timeout, sending heartbeat\n");
-                robotraconteurlite_client_send_heartbeat(&node, event.connection);
-                robotraconteurlite_node_consume_event(&event);
-                break;
-            }
-            case ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT: {
-                printf("Connection timeout\n");
-                /* close connection */
-                robotraconteurlite_connection_close(event.connection);
-                robotraconteurlite_node_consume_event(&event);
-                break;
-            }
-            /* NOLINTNEXTLINE(bugprone-branch-clone) */
-            case ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE: {
-                /* Loop will be broken after next_cycle */
-                robotraconteurlite_node_consume_event(&event);
-                break;
-            }
-            default: {
-                robotraconteurlite_node_consume_event(&event);
-                break;
-            }
-            }
-        } while (event.event_type != ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE);
-    }
-
-    robotraconteurlite_connection_close(connection);
 
     /* TODO: Drain the connection */
     robotraconteurlite_clock_gettime(&rr_clock, &now);
     robotraconteurlite_connections_communicate(&connections_head, now);
 
-    printf("Done!\n");
+    if (!data.done)
+    {
+        printf("Test failure occurred");
+        return 1;
+    }
+    else
+    {
+        printf("Done!\n");
+    }
+
+    return 0;
+}
+
+static struct tiny_client_data* get_tiny_client_data(struct robotraconteurlite_user_storage* storage)
+{
+    return (struct tiny_client_data*)storage->user_data;
+}
+
+struct robotraconteurlite_node_request request;
+
+static robotraconteurlite_status request_error(struct robotraconteurlite_node_request* request,
+                                               robotraconteurlite_status request_rv);
+
+static robotraconteurlite_status get_d1_response(struct robotraconteurlite_event* event,
+                                                 struct robotraconteurlite_node_request* request);
+static robotraconteurlite_status set_d1_response(struct robotraconteurlite_event* event,
+                                                 struct robotraconteurlite_node_request* request);
+
+const struct robotraconteurlite_node_request_ops get_d1_ops = {get_d1_response, request_error};
+
+const struct robotraconteurlite_node_request_ops set_d1_ops = {set_d1_response, request_error};
+
+static void client_connected(struct robotraconteurlite_node_client_event* event)
+{
+    struct robotraconteurlite_node_send_messageentry_data send_data;
+    robotraconteurlite_status rv = -1;
+    printf("Client connected\n");
+
+    rv = robotraconteurlite_client_send_empty_request_c_str(
+        event->client, &send_data, ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ, "d1", NULL, &request);
+    if (RRLITE_FAILED(rv))
+    {
+        /* TODO: in real software, handle RETRY return error gracefully */
+        printf("Send request error\n");
+        exit(1);
+    }
+
+    rv = robotraconteurlite_node_request_set_timeout(&request, &rr_clock, 15000);
+    if (RRLITE_FAILED(rv))
+    {
+        printf("Request \n");
+        exit(1);
+    }
+
+    (void)robotraconteurlite_node_request_set_ops(&request, &get_d1_ops);
+}
+static void client_disconnected(struct robotraconteurlite_node_client_event* event)
+{
+    struct tiny_client_data* data;
+    printf("Client disconnected\n");
+
+    data = get_tiny_client_data(event->client->user_storage);
+    data->keep_going = 0;
+}
+
+static robotraconteurlite_status request_error(struct robotraconteurlite_node_request* request,
+                                               robotraconteurlite_status request_rv)
+{
+    printf("request error\n");
+    exit(1);
+    return 0;
+}
+
+static robotraconteurlite_status get_d1_response(struct robotraconteurlite_event* event,
+                                                 struct robotraconteurlite_node_request* request_res)
+{
+    struct robotraconteurlite_node_send_messageentry_data send_data;
+    robotraconteurlite_status rv = -1;
+    robotraconteurlite_double d1_set_val = 42.2;
+    robotraconteurlite_double d1_val = -1e9;
+    struct robotraconteurlite_messageelement_reader element_reader;
+
+    printf("get_d1_response called\n");
+
+    rv = robotraconteurlite_client_end_request2(request_res, event);
+    if (RRLITE_FAILED(rv))
+    {
+        printf("get_d1 request failed\n");
+        exit(1);
+        return 0;
+    }
+
+    rv = robotraconteurlite_messageentry_reader_find_element_verify_scalar_c_str(
+        &event->received_message.entry_reader, "value", &element_reader, ROBOTRACONTEURLITE_DATATYPE_DOUBLE);
+    if (RRLITE_FAILED(rv))
+    {
+        printf("get_d1 read value failed\n");
+        exit(1);
+        return 0;
+    }
+
+    rv = robotraconteurlite_messageelement_reader_read_data_double(&element_reader, &d1_val);
+    if (RRLITE_FAILED(rv))
+    {
+        printf("Could not read double\n");
+        return -1;
+    }
+    printf("Got d1 value: %f\n", d1_val);
+
+    rv = robotraconteurlite_client_begin_request_c_str(event->connection->client, &send_data,
+                                                       ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ, "d1", NULL,
+                                                       &request);
+    if (RRLITE_FAILED(rv))
+    {
+        /* TODO: in real software, handle RETRY return error gracefully */
+        printf("Send request error\n");
+        exit(1);
+    }
+
+    rv = robotraconteurlite_messageelement_writer_write_double_c_str(&send_data.element_writer, "value", d1_set_val);
+
+    if (RRLITE_FAILED(rv))
+    {
+        printf("Could not write double\n");
+        exit(1);
+        return 0;
+    }
+
+    rv = robotraconteurlite_client_send_request(&send_data, &request);
+    if (RRLITE_FAILED(rv))
+    {
+        /*TODO: handle retry */
+        printf("Could not send set_d1\n");
+        exit(1);
+        return 0;
+    }
+
+    rv = robotraconteurlite_node_request_set_timeout(&request, &rr_clock, 15000);
+    if (RRLITE_FAILED(rv))
+    {
+        printf("Request \n");
+        exit(1);
+        return 0;
+    }
+
+    (void)robotraconteurlite_node_request_set_ops(&request, &set_d1_ops);
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+static robotraconteurlite_status set_d1_response(struct robotraconteurlite_event* event,
+                                                 struct robotraconteurlite_node_request* request_res)
+{
+    struct tiny_client_data* data;
+    robotraconteurlite_status rv = -1;
+    printf("set_d1_response called\n");
+
+    rv = robotraconteurlite_client_end_request2(request_res, event);
+    if (RRLITE_FAILED(rv))
+    {
+        printf("set_d1 request failed\n");
+        exit(1);
+        return 0;
+    }
+
+    data = get_tiny_client_data(event->connection->client->user_storage);
+    data->keep_going = 0;
+    data->done = 1;
 
     return 0;
 }

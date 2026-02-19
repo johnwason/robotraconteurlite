@@ -714,7 +714,8 @@ robotraconteurlite_status robotraconteurlite_connection_impl_prepare_wait(
     }
 
     if (FLAGS_CHECK(connection->connection_state,
-                    (ROBOTRACONTEURLITE_STATUS_FLAGS_SEND_REQUESTED | ROBOTRACONTEURLITE_STATUS_FLAGS_SENDING)))
+                    (ROBOTRACONTEURLITE_STATUS_FLAGS_SEND_REQUESTED | ROBOTRACONTEURLITE_STATUS_FLAGS_SENDING |
+                     ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING)))
     {
         FLAGS_SET(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_SEND);
     }

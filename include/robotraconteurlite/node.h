@@ -38,7 +38,8 @@ enum robotraconteurlite_event_type
     ROBOTRACONTEURLITE_EVENT_TYPE_MESSAGE_SEND_COMPLETE,
     ROBOTRACONTEURLITE_EVENT_TYPE_NEXT_CYCLE,
     ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_HEARTBEAT_TIMEOUT,
-    ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT
+    ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_TIMEOUT,
+    ROBOTRACONTEURLITE_EVENT_TYPE_CONNECTION_CLIENT_SOCKET_CONNECTED
 };
 
 struct robotraconteurlite_node_service;
@@ -201,6 +202,8 @@ struct robotraconteurlite_node_request
     struct robotraconteurlite_connection* connection;
     robotraconteurlite_u32 local_endpoint;
     robotraconteurlite_u32 request_id;
+    robotraconteurlite_timespec timeout_timespec;
+    robotraconteurlite_status request_status;
     struct robotraconteurlite_user_storage* user_storage;
 
 #ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
@@ -394,18 +397,37 @@ robotraconteurlite_client_handshake(struct robotraconteurlite_node_client* clien
                                     struct robotraconteurlite_event* event, robotraconteurlite_timespec now);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_begin_request(
-    struct robotraconteurlite_node_send_messageentry_data* send_data, robotraconteurlite_u16 entry_type,
-    const char* membername, const char* servicepath);
+    struct robotraconteurlite_node_client* client, struct robotraconteurlite_node_send_messageentry_data* send_data,
+    robotraconteurlite_u16 entry_type, const struct robotraconteurlite_const_string* membername,
+    const struct robotraconteurlite_const_string* servicepath, struct robotraconteurlite_node_request* request);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_send_empty_request(
-    struct robotraconteurlite_node_send_messageentry_data* send_data, robotraconteurlite_u16 entry_type,
-    const char* membername, const char* servicepath);
+    struct robotraconteurlite_node_client* client, struct robotraconteurlite_node_send_messageentry_data* send_data,
+    robotraconteurlite_u16 entry_type, const struct robotraconteurlite_const_string* membername,
+    const struct robotraconteurlite_const_string* servicepath, struct robotraconteurlite_node_request* request);
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status
-robotraconteurlite_client_send_request(struct robotraconteurlite_node_send_messageentry_data* send_data);
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_begin_request_c_str(
+    struct robotraconteurlite_node_client* client, struct robotraconteurlite_node_send_messageentry_data* send_data,
+    robotraconteurlite_u16 entry_type, const char* membername, const char* servicepath,
+    struct robotraconteurlite_node_request* request);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_send_empty_request_c_str(
+    struct robotraconteurlite_node_client* client, struct robotraconteurlite_node_send_messageentry_data* send_data,
+    robotraconteurlite_u16 entry_type, const char* membername, const char* servicepath,
+    struct robotraconteurlite_node_request* request);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_send_request(
+    struct robotraconteurlite_node_send_messageentry_data* send_data, struct robotraconteurlite_node_request* request);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_end_request(
     struct robotraconteurlite_node_send_messageentry_data* send_data, struct robotraconteurlite_event* event);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_end_request2(
+    struct robotraconteurlite_node_request* request, struct robotraconteurlite_event* event);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_request_set_timeout(struct robotraconteurlite_node_request* request,
+                                            struct robotraconteurlite_clock* clock, robotraconteurlite_i32 timeout_ms);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_client_send_heartbeat(
     struct robotraconteurlite_node* node, struct robotraconteurlite_connection* connection);
@@ -517,8 +539,8 @@ struct robotraconteurlite_node_request_ops
 {
     robotraconteurlite_status (*request_completed)(struct robotraconteurlite_event* event,
                                                    struct robotraconteurlite_node_request* request);
-    robotraconteurlite_status (*request_error)(struct robotraconteurlite_event* event,
-                                               struct robotraconteurlite_node_request* request);
+    robotraconteurlite_status (*request_error)(struct robotraconteurlite_node_request* request,
+                                               robotraconteurlite_status request_rv);
 };
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_node_request_set_ops(
@@ -535,6 +557,12 @@ ROBOTRACONTEURLITE_API void robotraconteurlite_node_request_list_append(
 
 ROBOTRACONTEURLITE_API void robotraconteurlite_node_request_list_remove(
     struct robotraconteurlite_node_request* requests_head, struct robotraconteurlite_node_request* value);
+
+ROBOTRACONTEURLITE_API void robotraconteurlite_node_request_list_head_construct(
+    struct robotraconteurlite_node_request* requests_head);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_node_requests_process_control(struct robotraconteurlite_node* node, robotraconteurlite_timespec now);
 
 #endif
 

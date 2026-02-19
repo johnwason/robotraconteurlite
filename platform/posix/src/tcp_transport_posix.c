@@ -403,3 +403,43 @@ robotraconteurlite_status robotraconteurlite_poll_impl_add_fd(ROBOTRACONTEURLITE
 
     return robotraconteurlite_poll_add_fd(sock_handle, extra_events, pollfds, pollfd_count, max_pollfds);
 }
+
+robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(
+    struct robotraconteurlite_connection_socket* sock, int* errno_out)
+{
+
+    struct pollfd fds[1];
+    ssize_t ret;
+
+    fds[0].fd = sock->sock;
+    fds[0].events = POLLOUT | POLLERR;
+
+    *errno_out = 0;
+
+    ret = poll(fds, 1, 0);
+
+    if (ret < 0)
+    {
+        (void)close(sock->sock);
+        *errno_out = errno;
+        return ROBOTRACONTEURLITE_ERROR_SYSTEM_ERROR;
+    }
+
+    if (ret == 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_RETRY;
+    }
+
+    if ((fds[0].events & POLLOUT) != 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    if ((fds[0].events & POLLERR) != 0)
+    {
+        (void)close(sock->sock);
+        return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+}

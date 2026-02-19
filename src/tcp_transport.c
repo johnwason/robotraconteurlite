@@ -30,6 +30,7 @@
 #define FLAGS_CLEAR ROBOTRACONTEURLITE_FLAGS_CLEAR
 
 #define FAILED ROBOTRACONTEURLITE_FAILED
+#define SUCCEEDED ROBOTRACONTEURLITE_SUCCEEDED
 #define RETRY ROBOTRACONTEURLITE_RETRY
 
 #ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
@@ -1038,7 +1039,24 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_process_
     }
 
     /* Do handshake */
-    return robotraconteurlite_tcp_connection_handshake(connection);
+    rv = robotraconteurlite_tcp_connection_handshake(connection);
+
+    if (SUCCEEDED(rv))
+    {
+        if ((!FLAGS_CHECK(connection->config_flags, ROBOTRACONTEURLITE_CONFIG_FLAGS_ISSERVER)) &&
+            (!FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED)))
+        {
+            int errno_out = 0;
+            rv = robotraconteurlite_tcp_socket_is_connection_complete(&connection->head.sock, &errno_out);
+            if (FAILED(rv) && (!RETRY(rv)))
+            {
+                FLAGS_SET(connection->config_flags, ROBOTRACONTEURLITE_STATUS_FLAGS_ERROR);
+                return rv;
+            }
+            FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED);
+        }
+    }
+    return rv;
 }
 robotraconteurlite_status robotraconteurlite_tcp_connection_communicate(
     struct robotraconteurlite_connection* connection, robotraconteurlite_timespec now)
@@ -1249,6 +1267,7 @@ robotraconteurlite_status robotraconteurlite_tcp_connect_service(struct robotrac
 #endif
 
     connect_data->client_connection = c;
+    c->client = connect_data;
 
     if (FLAGS_CHECK(connect_data->service_address->flags, ROBOTRACONTEURLITE_ADDR_FLAGS_WEBSOCKET))
     {

@@ -174,6 +174,9 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_tcp_socket_connect(struct robotraconteurlite_sockaddr_storage* addr,
                                       struct robotraconteurlite_connection_socket* sock_out, int* errno_out);
 
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_tcp_socket_is_connection_complete(struct robotraconteurlite_connection_socket* sock, int* errno_out);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1053,7 +1053,11 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_process_
                 FLAGS_SET(connection->config_flags, ROBOTRACONTEURLITE_STATUS_FLAGS_ERROR);
                 return rv;
             }
-            FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED);
+            if (!RETRY(rv))
+            {
+                FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED |
+                                                            ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_REQUESTED);
+            }
         }
     }
     return rv;

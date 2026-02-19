@@ -427,3 +427,53 @@ robotraconteurlite_status robotraconteurlite_poll_impl_add_fd(ROBOTRACONTEURLITE
 
     return robotraconteurlite_poll_add_fd(sock_handle, extra_events, pollfds, pollfd_count, max_pollfds);
 }
+
+robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(ROBOTRACONTEURLITE_SOCKET_HANDLE sock,
+                                                                               int* errno_out)
+{
+
+    WSAPOLLFD fds[1];
+    int ret = 0;
+
+    memset(fds, 0, sizeof(fds));
+
+    fds[0].fd = sock;
+    fds[0].events = POLLOUT;
+
+    *errno_out = 0;
+
+    ret = WSAPoll(fds, 1, 0);
+
+    if (ret < 0)
+    {
+        *errno_out = WSAGetLastError();
+        if (sock != 0)
+        {
+            (void)closesocket(sock);
+        }
+        return ROBOTRACONTEURLITE_ERROR_SYSTEM_ERROR;
+    }
+
+    if (ret == 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_RETRY;
+    }
+
+    /* cppcheck-suppress misra-config */
+    if ((fds[0].revents & POLLOUT) != 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    /* cppcheck-suppress misra-config */
+    if ((fds[0].revents & POLLERR) != 0)
+    {
+        if (sock != 0)
+        {
+            (void)closesocket(sock);
+        }
+        return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+}

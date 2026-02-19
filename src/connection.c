@@ -540,8 +540,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_connection_i
     FLAGS_CLEAR(c->config_flags, ROBOTRACONTEURLITE_CONFIG_FLAGS_ISSERVER);
     (void)memcpy(&c->head.sock, sock, sizeof(struct robotraconteurlite_connection_socket));
     c->head.sock.flags = ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE;
-    c->connection_state = (robotraconteurlite_u32)ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING |
-                          ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_REQUESTED;
+    c->connection_state = (robotraconteurlite_u32)ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING;
     (void)memset(&c->transport_storage, 0, sizeof(c->transport_storage));
 
     c->last_recv_message_time = now;
@@ -725,8 +724,7 @@ robotraconteurlite_status robotraconteurlite_connection_impl_prepare_wait(
     }
 
     if (FLAGS_CHECK(connection->connection_state,
-                    (ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_REQUESTED | ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVING |
-                     ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING)))
+                    (ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_REQUESTED | ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVING)))
     {
         FLAGS_SET(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_RECEIVE);
     }

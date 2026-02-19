@@ -404,14 +404,14 @@ robotraconteurlite_status robotraconteurlite_poll_impl_add_fd(ROBOTRACONTEURLITE
     return robotraconteurlite_poll_add_fd(sock_handle, extra_events, pollfds, pollfd_count, max_pollfds);
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(
-    struct robotraconteurlite_connection_socket* sock, int* errno_out)
+robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(ROBOTRACONTEURLITE_SOCKET_HANDLE sock,
+                                                                               int* errno_out)
 {
 
     struct pollfd fds[1];
-    ssize_t ret;
+    ssize_t ret = 0;
 
-    fds[0].fd = sock->sock;
+    fds[0].fd = sock;
     fds[0].events = POLLOUT | POLLERR;
 
     *errno_out = 0;
@@ -420,7 +420,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(
 
     if (ret < 0)
     {
-        (void)close(sock->sock);
+        (void)close(sock);
         *errno_out = errno;
         return ROBOTRACONTEURLITE_ERROR_SYSTEM_ERROR;
     }
@@ -430,14 +430,16 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(
         return ROBOTRACONTEURLITE_ERROR_RETRY;
     }
 
-    if ((fds[0].events & POLLOUT) != 0)
+    /* cppcheck-suppress misra-config */
+    if ((fds[0].revents & POLLOUT) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
 
-    if ((fds[0].events & POLLERR) != 0)
+    /* cppcheck-suppress misra-config */
+    if ((fds[0].revents & POLLERR) != 0)
     {
-        (void)close(sock->sock);
+        (void)close(sock);
         return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
     }
 

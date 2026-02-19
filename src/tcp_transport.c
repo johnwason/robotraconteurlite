@@ -1047,7 +1047,7 @@ robotraconteurlite_status robotraconteurlite_tcp_connection_communicate_process_
             (!FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CLIENT_SOCKET_CONNECTED)))
         {
             int errno_out = 0;
-            rv = robotraconteurlite_tcp_socket_is_connection_complete(&connection->head.sock, &errno_out);
+            rv = robotraconteurlite_tcp_socket_is_connection_complete(connection->head.sock.sock, &errno_out);
             if (FAILED(rv) && (!RETRY(rv)))
             {
                 FLAGS_SET(connection->config_flags, ROBOTRACONTEURLITE_STATUS_FLAGS_ERROR);

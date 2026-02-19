@@ -7,7 +7,7 @@ robotraconteurlite_status robotraconteurlite_clock_timeout_from_now(struct robot
                                                                     robotraconteurlite_i32 timeout_ms,
                                                                     robotraconteurlite_timespec* timeout_out)
 {
-    robotraconteurlite_timespec now;
+    robotraconteurlite_timespec now = 0;
     robotraconteurlite_status rv = -1;
 
     rv = robotraconteurlite_clock_gettime(clock, &now);

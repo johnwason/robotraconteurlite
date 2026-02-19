@@ -19,8 +19,8 @@ robotraconteurlite_status robotraconteurlite_util_match_string_in_list(
                 t2.data = &list->data[k];
                 t2.len = (i - k);
 
-                rv = robotraconteurlite_string_cmp(&t2, value) == 0 ? 1 : 0;
-                if (rv == 1U)
+                rv = (robotraconteurlite_status)((robotraconteurlite_string_cmp(&t2, value) == 0) ? 1 : 0);
+                if (rv == 1)
                 {
                     return rv;
                 }
@@ -38,7 +38,7 @@ robotraconteurlite_status robotraconteurlite_util_match_string_in_list(
         struct robotraconteurlite_const_string t2;
         t2.data = &list->data[k];
         t2.len = (list->len - k);
-        return robotraconteurlite_string_cmp(&t2, value) == 0 ? 1 : 0;
+        return (robotraconteurlite_string_cmp(&t2, value) == 0) ? 1 : 0;
     }
 
     return 0U;

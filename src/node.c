@@ -765,7 +765,7 @@ robotraconteurlite_status robotraconteurlite_connection_send_messageentry_error_
     struct robotraconteurlite_node_send_messageentry_data send_data;
     struct robotraconteurlite_messageentry_const_header send_message_entry_header;
     robotraconteurlite_status rv = -1;
-    if ((request_message_entry_header->entry_type & 0x1) == 0)
+    if ((request_message_entry_header->entry_type & 0x1U) == 0U)
     {
         /* This is a response message, don't send anything to avoid infinite transmissions */
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
@@ -1811,13 +1811,17 @@ static robotraconteurlite_status robotraconteurlite_client_verify_objecttype_res
         return rv;
     }
 
-    robotraconteurlite_string_shallow_copy_from_mutable(&temp_str, &temp_const_str);
+    rv = robotraconteurlite_string_shallow_copy_from_mutable(&temp_str, &temp_const_str);
+    if (FAILED(rv))
+    {
+        return rv;
+    }
     rv = robotraconteurlite_util_match_string_in_list(expected_type, &temp_const_str);
     if (FAILED(rv))
     {
         return rv;
     }
-    if (rv == 1U)
+    if (rv == 1)
     {
         return rv;
     }
@@ -1848,9 +1852,13 @@ static robotraconteurlite_status robotraconteurlite_client_verify_objecttype_res
             return rv;
         }
 
-        robotraconteurlite_string_shallow_copy_from_mutable(&temp_str, &temp_const_str);
+        rv = robotraconteurlite_string_shallow_copy_from_mutable(&temp_str, &temp_const_str);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
         rv = robotraconteurlite_util_match_string_in_list(expected_type, &temp_const_str);
-        if (rv == 1U)
+        if (rv == 1)
         {
             return rv;
         }
@@ -1980,7 +1988,7 @@ robotraconteurlite_status robotraconteurlite_client_handshake(struct robotracont
                 {
                     return robotraconteurlite_client_handshake_error(handshake_data);
                 }*/
-                if (client->expected_root_object_type.len > 0)
+                if (client->expected_root_object_type.len > 0U)
                 {
                     rv = robotraconteurlite_client_verify_objecttype_response(&event->received_message.entry_reader,
                                                                               &client->expected_root_object_type);
@@ -2148,9 +2156,10 @@ robotraconteurlite_status robotraconteurlite_client_begin_request(
     robotraconteurlite_u16 entry_type, const struct robotraconteurlite_const_string* membername,
     const struct robotraconteurlite_const_string* servicepath, struct robotraconteurlite_node_request* request)
 {
+    robotraconteurlite_status rv = -1;
     if (client != NULL)
     {
-        memset(send_data, 0, sizeof(struct robotraconteurlite_node_send_messageentry_data));
+        (void)memset(send_data, 0, sizeof(struct robotraconteurlite_node_send_messageentry_data));
         send_data->node = client->node;
         send_data->connection = client->client_connection;
     }
@@ -2162,12 +2171,16 @@ robotraconteurlite_status robotraconteurlite_client_begin_request(
     send_data->message_entry_header->request_id = send_data->connection->last_request_id;
     if (servicepath != NULL)
     {
-        robotraconteurlite_string_shallow_copy_to(servicepath, &send_data->message_entry_header->service_path);
+        rv = robotraconteurlite_string_shallow_copy_to(servicepath, &send_data->message_entry_header->service_path);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
     }
     else
     {
-        robotraconteurlite_status rv = robotraconteurlite_string_shallow_copy_to(
-            &send_data->connection->remote_service_name, &send_data->message_entry_header->service_path);
+        rv = robotraconteurlite_string_shallow_copy_to(&send_data->connection->remote_service_name,
+                                                       &send_data->message_entry_header->service_path);
         if (FAILED(rv))
         {
             return rv;
@@ -2175,7 +2188,11 @@ robotraconteurlite_status robotraconteurlite_client_begin_request(
     }
     if (membername != NULL)
     {
-        robotraconteurlite_string_shallow_copy_to(membername, &send_data->message_entry_header->member_name);
+        rv = robotraconteurlite_string_shallow_copy_to(membername, &send_data->message_entry_header->member_name);
+        if (FAILED(rv))
+        {
+            return rv;
+        }
     }
     else
     {
@@ -2270,8 +2287,8 @@ robotraconteurlite_status robotraconteurlite_client_begin_request_c_str(
 {
     struct robotraconteurlite_const_string membername_str_storage;
     struct robotraconteurlite_const_string servicepath_str_storage;
-    struct robotraconteurlite_const_string* membername_str = NULL;
-    struct robotraconteurlite_const_string* servicepath_str = NULL;
+    const struct robotraconteurlite_const_string* membername_str = NULL;
+    const struct robotraconteurlite_const_string* servicepath_str = NULL;
     if (membername != NULL)
     {
         robotraconteurlite_string_from_c_str(membername, &membername_str_storage);
@@ -2293,8 +2310,8 @@ robotraconteurlite_status robotraconteurlite_client_send_empty_request_c_str(
 {
     struct robotraconteurlite_const_string membername_str_storage;
     struct robotraconteurlite_const_string servicepath_str_storage;
-    struct robotraconteurlite_const_string* membername_str = NULL;
-    struct robotraconteurlite_const_string* servicepath_str = NULL;
+    const struct robotraconteurlite_const_string* membername_str = NULL;
+    const struct robotraconteurlite_const_string* servicepath_str = NULL;
     if (membername != NULL)
     {
         robotraconteurlite_string_from_c_str(membername, &membername_str_storage);

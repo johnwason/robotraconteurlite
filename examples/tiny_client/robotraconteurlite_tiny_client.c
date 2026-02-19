@@ -203,7 +203,6 @@ int main(int argc, const char* argv[])
     while (data.keep_going)
     {
         struct robotraconteurlite_pollfd pollfds[NUM_CONNECTIONS + 2];
-        robotraconteurlite_status rv = -1;
 
         robotraconteurlite_clock_gettime(&rr_clock, &now);
 
@@ -247,13 +246,13 @@ static struct tiny_client_data* get_tiny_client_data(struct robotraconteurlite_u
 
 struct robotraconteurlite_node_request request;
 
-static robotraconteurlite_status request_error(struct robotraconteurlite_node_request* request,
+static robotraconteurlite_status request_error(struct robotraconteurlite_node_request* request_res,
                                                robotraconteurlite_status request_rv);
 
 static robotraconteurlite_status get_d1_response(struct robotraconteurlite_event* event,
-                                                 struct robotraconteurlite_node_request* request);
+                                                 struct robotraconteurlite_node_request* request_res);
 static robotraconteurlite_status set_d1_response(struct robotraconteurlite_event* event,
-                                                 struct robotraconteurlite_node_request* request);
+                                                 struct robotraconteurlite_node_request* request_res);
 
 const struct robotraconteurlite_node_request_ops get_d1_ops = {get_d1_response, request_error};
 
@@ -285,17 +284,18 @@ static void client_connected(struct robotraconteurlite_node_client_event* event)
 }
 static void client_disconnected(struct robotraconteurlite_node_client_event* event)
 {
-    struct tiny_client_data* data;
+    struct tiny_client_data* data = NULL;
     printf("Client disconnected\n");
 
     data = get_tiny_client_data(event->client->user_storage);
     data->keep_going = 0;
 }
 
-static robotraconteurlite_status request_error(struct robotraconteurlite_node_request* request,
+static robotraconteurlite_status request_error(struct robotraconteurlite_node_request* request_res,
                                                robotraconteurlite_status request_rv)
 {
-    printf("request error\n");
+    ROBOTRACONTEURLITE_UNUSED(request_res);
+    printf("request error %d\n", request_rv);
     exit(1);
     return 0;
 }
@@ -380,7 +380,7 @@ static robotraconteurlite_status get_d1_response(struct robotraconteurlite_event
 static robotraconteurlite_status set_d1_response(struct robotraconteurlite_event* event,
                                                  struct robotraconteurlite_node_request* request_res)
 {
-    struct tiny_client_data* data;
+    struct tiny_client_data* data = NULL;
     robotraconteurlite_status rv = -1;
     printf("set_d1_response called\n");
 

@@ -72,7 +72,7 @@ endif()
 if(WIN32)
     set(ROBOTRACONTEURLITE_SRC
         ${ROBOTRACONTEURLITE_SRC} platform/win32/src/tcp_transport_win32.c platform/win32/src/clock_win32.c
-        platform/win32/src/poll_win32.c platform/win32/src/nodeid_win32.c)
+        platform/win32/src/poll_win32.c platform/win32/src/nodeid_win32.c platform/win32/src/url_win32.c)
 endif()
 
 add_library(robotraconteurlite ${ROBOTRACONTEURLITE_SRC})

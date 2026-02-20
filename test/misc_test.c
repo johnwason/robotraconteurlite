@@ -11,11 +11,15 @@
 
 #define inline
 #include <cmocka.h>
-
-#include <arpa/inet.h>
 #include <stdlib.h>
+
+#ifndef _WIN32
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <net/if.h>
+#else
+#include <ws2tcpip.h>
+#endif
 
 static int compare_sockaddr(const struct robotraconteurlite_addr* addr, const char* addr_str, uint16_t port)
 {
@@ -55,11 +59,13 @@ static int compare_sockaddr6(const struct robotraconteurlite_addr* addr, const c
         {
             expected.sin6_scope_id = (uint32_t)(scope_l);
         }
+#ifndef _WIN32
         else
         {
             /* TODO: raise error if returns 0? */
             expected.sin6_scope_id = if_nametoindex(scopeid);
         }
+#endif
     }
 
     if (memcmp(ip6, &expected, sizeof(struct sockaddr_in)) == 0)

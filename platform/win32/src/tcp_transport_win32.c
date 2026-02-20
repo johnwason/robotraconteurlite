@@ -333,10 +333,6 @@ robotraconteurlite_status robotraconteurlite_tcp_server_socket_close(struct robo
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_u16 robotraconteurlite_ntohs(robotraconteurlite_u16 netshort) { return ntohs(netshort); }
-
-robotraconteurlite_u16 robotraconteurlite_htons(robotraconteurlite_u16 hostshort) { return htons(hostshort); }
-
 robotraconteurlite_u64 robotraconteurlite_be64toh(robotraconteurlite_u64 big_endian_64bits)
 {
     /* Implement byte swap */

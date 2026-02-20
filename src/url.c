@@ -1,9 +1,6 @@
 #include "robotraconteurlite/url.h"
 
-#include <arpa/inet.h>
 #include <stdlib.h>
-#include <netinet/in.h>
-#include <net/if.h>
 #include <errno.h>
 
 static int is_alpha_numeric(char c)
@@ -179,7 +176,7 @@ static robotraconteurlite_status parse_port(const struct robotraconteurlite_cons
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
-            return (uint16_t)port_l;
+            return (robotraconteurlite_u16)port_l;
         }
     }
     default:
@@ -241,10 +238,11 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
     /* Find host or IP address */
     if (url->data[k] == ((char)'['))
     {
-        /* cppcheck-suppress misra-c2012-11.3 */
-        struct sockaddr_in6* ip6 = (struct sockaddr_in6*)&addr_out->socket_addr;
         robotraconteurlite_size_t ipv6_end = 0;
         robotraconteurlite_size_t scope_delim = 0;
+        robotraconteurlite_u8 sin6_addr[16];
+        robotraconteurlite_u32 sin6_scope_id = 0;
+        robotraconteurlite_u16 sin6_port = 0;
         /* IPv6 address */
 
         /* Find closing bracket */
@@ -296,11 +294,10 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
 
             /* false positive*/
             /* cppcheck-suppress [misra-c2012-17.3,misra-config]*/
-            if (inet_pton(AF_INET6, temp_buf, &ip6->sin6_addr) != 1)
+            if (robotraconteurlite_inet_pton6(temp_buf, sin6_addr) != 1)
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
-            ip6->sin6_family = AF_INET6;
 
             if (scope_delim != 0U)
             {
@@ -321,12 +318,12 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
                     scope_l = strtol(temp_buf, &endptr, 10);
                     if ((temp_buf != endptr) && (errno == 0))
                     {
-                        ip6->sin6_scope_id = (uint32_t)(scope_l);
+                        sin6_scope_id = (robotraconteurlite_u32)(scope_l);
                     }
                     else
                     {
                         /* TODO: raise error if returns 0? */
-                        ip6->sin6_scope_id = if_nametoindex(temp_buf);
+                        sin6_scope_id = robotraconteurlite_if_nametoindex(temp_buf);
                     }
                 }
             }
@@ -339,7 +336,12 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
-            ip6->sin6_port = htons((uint16_t)port_r);
+            sin6_port = robotraconteurlite_htons((robotraconteurlite_u16)port_r);
+        }
+
+        if (robotraconteurlite_url_fill_sockaddr6(addr_out, sin6_addr, sin6_port, sin6_scope_id) != 0)
+        {
+            return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
         }
 
         addr_out->http_host.data = &url->data[k];
@@ -352,8 +354,9 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
     else
     {
         robotraconteurlite_size_t host_end = 0;
-        /* cppcheck-suppress misra-c2012-11.3 */
-        struct sockaddr_in* ip = (struct sockaddr_in*)&addr_out->socket_addr;
+        robotraconteurlite_u8 sin_addr[4];
+        robotraconteurlite_u16 sin_port = 0;
+        (void)memset(sin_addr, 0, sizeof(sin_addr));
         for (i = k; i < url->len; i++)
         {
             if ((url->data[i] == ((char)':')) || (url->data[i] == ((char)'/')) || (url->data[i] == ((char)'?')))
@@ -384,9 +387,8 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
 
             /* false positive*/
             /* cppcheck-suppress [misra-c2012-17.3,misra-config]*/
-            if (inet_pton(AF_INET, temp_buf, &ip->sin_addr) == 1)
+            if (robotraconteurlite_inet_pton(temp_buf, sin_addr) == 1)
             {
-                ip->sin_family = AF_INET;
                 addr_out->flags |= ROBOTRACONTEURLITE_ADDR_FLAGS_SOCKADDR_VALID;
             }
         }
@@ -397,7 +399,12 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
-            ip->sin_port = htons((uint16_t)port_r);
+            sin_port = robotraconteurlite_htons((robotraconteurlite_u16)port_r);
+        }
+
+        if (robotraconteurlite_url_fill_sockaddr(addr_out, sin_addr, sin_port) != 0)
+        {
+            return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
         }
 
         addr_out->http_host.data = &url->data[k];

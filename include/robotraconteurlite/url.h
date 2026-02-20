@@ -48,4 +48,21 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_url_parse(
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_url_parse_cstr(const char* url, struct robotraconteurlite_addr* addr_out);
 
+ROBOTRACONTEURLITE_API robotraconteurlite_u16 robotraconteurlite_ntohs(robotraconteurlite_u16 netshort);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_u16 robotraconteurlite_htons(robotraconteurlite_u16 hostshort);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_i32 robotraconteurlite_inet_pton(const char* src, void* dest);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_i32 robotraconteurlite_inet_pton6(const char* src, void* dest);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_url_fill_sockaddr(
+    struct robotraconteurlite_addr* addr, const robotraconteurlite_u8* ip_addr, robotraconteurlite_u16 port);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_url_fill_sockaddr6(struct robotraconteurlite_addr* addr, const robotraconteurlite_u8* ip_addr,
+                                      robotraconteurlite_u16 port, robotraconteurlite_u32 scopeid);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_u32 robotraconteurlite_if_nametoindex(const char* ifname);
+
 #endif /* ROBOTRACONTEURLITE_URL_H */

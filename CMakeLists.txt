@@ -60,8 +60,9 @@ set(ROBOTRACONTEURLITE_SRC
     src/url.c)
 
 if(ROBOTRACONTEURLITE_POSIX)
-    set(ROBOTRACONTEURLITE_SRC ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c
-                               platform/posix/src/clock_posix.c platform/posix/src/poll_posix.c)
+    set(ROBOTRACONTEURLITE_SRC
+        ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c platform/posix/src/clock_posix.c
+        platform/posix/src/poll_posix.c platform/posix/src/url_posix.c)
 endif()
 
 if(ROBOTRACONTEURLITE_USE_LIBUUID)

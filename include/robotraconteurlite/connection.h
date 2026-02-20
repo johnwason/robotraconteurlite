@@ -19,6 +19,7 @@
 #include "robotraconteurlite/message.h"
 #include "robotraconteurlite/clock.h"
 #include "robotraconteurlite/util.h"
+#include "robotraconteurlite/url.h"
 
 /* robotraconteurlite_connection_config_flags */
 #define ROBOTRACONTEURLITE_CONFIG_FLAGS_NULL 0U
@@ -210,27 +211,6 @@ struct robotraconteurlite_connection_acceptor
     /* Control flags */
     robotraconteurlite_u32 config_flags;
     robotraconteurlite_u32 acceptor_state;
-};
-
-struct robotraconteurlite_sockaddr_storage
-{
-    robotraconteurlite_byte _storage[ROBOTRACONTEURLITE_SOCKADDR_STORAGE_SIZE];
-};
-
-/* robotraconteurlite_addr_flags */
-#define ROBOTRACONTEURLITE_ADDR_FLAGS_NULL 0x0U
-#define ROBOTRACONTEURLITE_ADDR_FLAGS_WEBSOCKET 0x1U
-
-struct robotraconteurlite_addr
-{
-    robotraconteurlite_u32 transport_type;
-    struct robotraconteurlite_sockaddr_storage socket_addr;
-    struct robotraconteurlite_nodeid nodeid;
-    struct robotraconteurlite_const_string nodename;
-    struct robotraconteurlite_const_string service_name;
-    robotraconteurlite_u32 flags;
-    struct robotraconteurlite_const_string http_host;
-    struct robotraconteurlite_const_string http_path;
 };
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status

@@ -45,6 +45,7 @@ set(ROBOTRACONTEURLITE_SRC
     include/robotraconteurlite/robotraconteurlite.h
     include/robotraconteurlite/tcp_transport.h
     include/robotraconteurlite/util.h
+    include/robotraconteurlite/url.h
     src/array.c
     src/array_types.c
     src/connection.c
@@ -55,7 +56,8 @@ set(ROBOTRACONTEURLITE_SRC
     src/tcp_transport.c
     src/poll.c
     src/util.c
-    src/clock_util.c)
+    src/clock_util.c
+    src/url.c)
 
 if(ROBOTRACONTEURLITE_POSIX)
     set(ROBOTRACONTEURLITE_SRC ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c

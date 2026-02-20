@@ -1186,6 +1186,13 @@ static robotraconteurlite_status robotraconteurlite_tcp_connect_service_send_web
     assert(connect_data->client_connection->head.transport_type == ROBOTRACONTEURLITE_TCP_TRANSPORT);
     assert(connect_data->client_connection->send_buffer_pos == 0U);
 
+    if ((connect_data->service_address->http_path.len == 0U) ||
+        (connect_data->service_address->http_path.data[0] == ((char)'?')))
+    {
+        /* Add space for forward slash */
+        send_len += 1;
+    }
+
     for (i = 0; i < (int)sizeof(websocket_key); i++)
     {
         websocket_key[i] = (robotraconteurlite_byte)((robotraconteurlite_u32)rand() % 256U);
@@ -1196,7 +1203,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connect_service_send_web
         return ROBOTRACONTEURLITE_ERROR_INVALID_PARAMETER;
     }
 
-    if ((connect_data->service_address->http_path.len == 0U) || (connect_data->service_address->http_host.len == 0U))
+    if (connect_data->service_address->http_host.len == 0U)
     {
         return ROBOTRACONTEURLITE_ERROR_INVALID_PARAMETER;
     }
@@ -1205,8 +1212,20 @@ static robotraconteurlite_status robotraconteurlite_tcp_connect_service_send_web
     send_buf = connect_data->client_connection->send_buffer;
     (void)memcpy(send_buf, STRCONST_HTTP_REQUEST_1, STRCONST_HTTP_REQUEST_1_LEN);
     send_buf = &send_buf[STRCONST_HTTP_REQUEST_1_LEN];
-    (void)memcpy(send_buf, connect_data->service_address->http_path.data, connect_data->service_address->http_path.len);
-    send_buf = &send_buf[connect_data->service_address->http_path.len];
+    if ((connect_data->service_address->http_path.len == 0U) ||
+        (connect_data->service_address->http_path.data[0] == ((char)'?')))
+    {
+        /* Add a forward slash if empty string for http_path */
+        send_buf[0] = (char)'/';
+        send_buf = &send_buf[1];
+    }
+
+    if (connect_data->service_address->http_path.len > 0U)
+    {
+        (void)memcpy(send_buf, connect_data->service_address->http_path.data,
+                     connect_data->service_address->http_path.len);
+        send_buf = &send_buf[connect_data->service_address->http_path.len];
+    }
     (void)memcpy(send_buf, STRCONST_HTTP_REQUEST_2, STRCONST_HTTP_REQUEST_2_LEN);
     send_buf = &send_buf[STRCONST_HTTP_REQUEST_2_LEN];
     (void)memcpy(send_buf, connect_data->service_address->http_host.data, connect_data->service_address->http_host.len);

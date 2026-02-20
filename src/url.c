@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <net/if.h>
+#include <errno.h>
 
 static int is_alpha_numeric(char c)
 {
@@ -37,7 +38,7 @@ static int is_numeric_char(char c)
 
 static int is_scheme_char(char c)
 {
-    if (is_alpha_numeric(c))
+    if (is_alpha_numeric(c) != 0)
     {
         return 1;
     }
@@ -56,7 +57,7 @@ static int is_scheme_char(char c)
 
 static int is_hostname_char(char c)
 {
-    if (is_alpha_numeric(c))
+    if (is_alpha_numeric(c) != 0)
     {
         return 1;
     }
@@ -74,7 +75,7 @@ static int is_hostname_char(char c)
 
 static int is_ipv6_char(char c)
 {
-    if (is_alpha_numeric(c))
+    if (is_alpha_numeric(c) != 0)
     {
         return 1;
     }
@@ -95,7 +96,7 @@ static int is_ipv6_char(char c)
 
 static int is_path_char(char c)
 {
-    if (is_alpha_numeric(c))
+    if (is_alpha_numeric(c) != 0)
     {
         return 1;
     }
@@ -134,14 +135,13 @@ static robotraconteurlite_status parse_port(const struct robotraconteurlite_cons
     switch (url->data[(*i)])
     {
     case '/':
-        return 0;
     case '?':
         return 0;
     case ':': {
         robotraconteurlite_size_t slash_delim = 0;
         robotraconteurlite_size_t port_start = *i + 1;
         (*i)++;
-        for (; (*i) < url->len; (*i)++)
+        while ((*i) < url->len)
         {
             if ((url->data[(*i)] == ((char)'/')) || (url->data[(*i)] == ((char)'?')))
             {
@@ -152,8 +152,9 @@ static robotraconteurlite_status parse_port(const struct robotraconteurlite_cons
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
+            (*i)++;
         }
-        if (slash_delim == 0)
+        if (slash_delim == 0U)
         {
             return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
         }
@@ -168,8 +169,9 @@ static robotraconteurlite_status parse_port(const struct robotraconteurlite_cons
             }
             (void)memset(temp_buf, 0, sizeof(temp_buf));
             (void)memcpy(temp_buf, &url->data[port_start], (slash_delim - port_start));
+            errno = 0;
             port_l = strtol(temp_buf, &endptr, 10);
-            if (endptr == temp_buf)
+            if ((endptr == temp_buf) || (errno != 0))
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
@@ -200,27 +202,26 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
         if (url->data[i] == ((char)':'))
         {
             /* can't be first character*/
-            if (i == 0)
+            if (i == 0U)
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
 
-            /* Need to have :// */
-            if (url->len < i + 3)
+            if (url->len < (i + 3U))
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
 
-            if ((url->data[i + 1] != ((char)'/')) || (url->data[i + 2] != ((char)'/')))
+            if ((url->data[i + 1U] != ((char)'/')) || (url->data[i + 2U] != ((char)'/')))
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
 
             /* found scheme */
             addr_out->scheme.data = url->data;
-            addr_out->scheme.len = i + 3;
+            addr_out->scheme.len = i + 3U;
 
-            k = i + 3;
+            k = i + 3U;
 
             break;
         }
@@ -232,7 +233,7 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
     }
 
     /* confirm scheme was found */
-    if (addr_out->scheme.len == 0)
+    if (addr_out->scheme.len == 0U)
     {
         return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
     }
@@ -240,13 +241,14 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
     /* Find host or IP address */
     if (url->data[k] == ((char)'['))
     {
+        /* cppcheck-suppress misra-c2012-11.3 */
         struct sockaddr_in6* ip6 = (struct sockaddr_in6*)&addr_out->socket_addr;
         robotraconteurlite_size_t ipv6_end = 0;
         robotraconteurlite_size_t scope_delim = 0;
         /* IPv6 address */
 
         /* Find closing bracket */
-        for (i = k + 1; i < url->len; i++)
+        for (i = k + 1U; i < url->len; i++)
         {
             if (url->data[i] == ((char)']'))
             {
@@ -266,54 +268,58 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
         }
 
         /* check if closing bracket was found */
-        if (ipv6_end == 0)
+        if (ipv6_end == 0U)
         {
             return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
         }
 
-        if ((ipv6_end + 1) >= url->len)
+        if ((ipv6_end + 1U) >= url->len)
         {
             return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
         }
 
         {
             char temp_buf[80];
-            if ((ipv6_end - (k + 1)) > sizeof(temp_buf))
+            if ((ipv6_end - (k + 1U)) > sizeof(temp_buf))
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
             (void)memset(temp_buf, 0, sizeof(temp_buf));
-            if (scope_delim == 0)
+            if (scope_delim == 0U)
             {
-                (void)memcpy(temp_buf, &url->data[k + 1], (ipv6_end - k - 1));
+                (void)memcpy(temp_buf, &url->data[k + 1U], (ipv6_end - k - 1U));
             }
             else
             {
-                (void)memcpy(temp_buf, &url->data[k + 1], (scope_delim - k - 1));
+                (void)memcpy(temp_buf, &url->data[k + 1U], (scope_delim - k - 1U));
             }
 
+            /* false positive*/
+            /* cppcheck-suppress [misra-c2012-17.3,misra-config]*/
             if (inet_pton(AF_INET6, temp_buf, &ip6->sin6_addr) != 1)
             {
                 return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
             }
             ip6->sin6_family = AF_INET6;
 
-            if (scope_delim != 0)
+            if (scope_delim != 0U)
             {
-                if ((ipv6_end - scope_delim) < 2)
+                if ((ipv6_end - scope_delim) < 2U)
                 {
                     return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
                 }
-                if ((ipv6_end - scope_delim - 1) >= sizeof(temp_buf))
+                if ((ipv6_end - scope_delim - 1U) >= sizeof(temp_buf))
                 {
                     return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
                 }
                 (void)memset(temp_buf, 0, sizeof(temp_buf));
-                (void)memcpy(temp_buf, &url->data[scope_delim + 1], (ipv6_end - scope_delim - 1));
+                (void)memcpy(temp_buf, &url->data[scope_delim + 1U], (ipv6_end - scope_delim - 1U));
                 {
                     char* endptr = NULL;
-                    long scope_l = strtol(temp_buf, &endptr, 10);
-                    if (temp_buf != endptr)
+                    long scope_l = 0;
+                    errno = 0;
+                    scope_l = strtol(temp_buf, &endptr, 10);
+                    if ((temp_buf != endptr) && (errno == 0))
                     {
                         ip6->sin6_scope_id = (uint32_t)(scope_l);
                     }
@@ -346,6 +352,7 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
     else
     {
         robotraconteurlite_size_t host_end = 0;
+        /* cppcheck-suppress misra-c2012-11.3 */
         struct sockaddr_in* ip = (struct sockaddr_in*)&addr_out->socket_addr;
         for (i = k; i < url->len; i++)
         {
@@ -361,7 +368,7 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
             }
         }
 
-        if (host_end == 0)
+        if (host_end == 0U)
         {
             return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
         }
@@ -375,6 +382,8 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
             (void)memset(temp_buf, 0, sizeof(temp_buf));
             (void)memcpy(temp_buf, &url->data[k], (host_end - k));
 
+            /* false positive*/
+            /* cppcheck-suppress [misra-c2012-17.3,misra-config]*/
             if (inet_pton(AF_INET, temp_buf, &ip->sin_addr) == 1)
             {
                 ip->sin_family = AF_INET;
@@ -414,61 +423,64 @@ robotraconteurlite_status robotraconteurlite_url_parse(const struct robotraconte
     /* Find '?' start of query string*/
     {
         robotraconteurlite_size_t query_start = 0;
-        for (i = k; i < url->len - 1; i++)
+        for (i = k; i < (url->len - 1U); i++)
         {
             if (url->data[i] == ((char)'?'))
             {
-                query_start = i + 1;
+                query_start = i + 1U;
                 break;
             }
         }
-        if (query_start > 0)
+        if (query_start > 0U)
         {
             robotraconteurlite_size_t param_start = query_start;
             robotraconteurlite_size_t param_eq = 0;
             /*robotraconteurlite_size_t param_end = url->len;*/
 
-            for (i = query_start; i < url->len + 1; i++)
+            for (i = query_start; i < (url->len + 1U); i++)
             {
                 if ((i >= url->len) || (url->data[i] == ((char)'&')))
                 {
                     /* TODO: query param found */
-                    if (param_eq == 0)
+                    if (param_eq == 0U)
                     {
                         /* Did not find an equal sign */
                         return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
                     }
 
-                    if (((param_eq - param_start) == 7) && (memcmp(&url->data[param_start], "service", 7) == 0) &&
-                        ((i - param_eq) > 1))
+                    /* cppcheck-suppress [misra-c2012-21.14,misra-c2012-21.16] */
+                    if (((param_eq - param_start) == 7U) && (memcmp(&url->data[param_start], "service", 7) == 0) &&
+                        ((i - param_eq) > 1U))
                     {
                         /* Found service */
-                        addr_out->service_name.data = &url->data[param_eq + 1];
-                        addr_out->service_name.len = i - param_eq - 1;
+                        addr_out->service_name.data = &url->data[param_eq + 1U];
+                        addr_out->service_name.len = i - param_eq - 1U;
                     }
 
-                    if (((param_eq - param_start) == 8) && (memcmp(&url->data[param_start], "nodename", 8) == 0) &&
-                        ((i - param_eq) > 1))
+                    /* cppcheck-suppress [misra-c2012-21.14,misra-c2012-21.16] */
+                    if (((param_eq - param_start) == 8U) && (memcmp(&url->data[param_start], "nodename", 8) == 0) &&
+                        ((i - param_eq) > 1U))
                     {
                         /* Found nodename */
-                        addr_out->nodename.data = &url->data[param_eq + 1];
-                        addr_out->nodename.len = i - param_eq - 1;
+                        addr_out->nodename.data = &url->data[param_eq + 1U];
+                        addr_out->nodename.len = i - param_eq - 1U;
                     }
 
-                    if (((param_eq - param_start) == 6) && (memcmp(&url->data[param_start], "nodeid", 6) == 0) &&
-                        ((i - param_eq) > 1))
+                    /* cppcheck-suppress [misra-c2012-21.14,misra-c2012-21.16] */
+                    if (((param_eq - param_start) == 6U) && (memcmp(&url->data[param_start], "nodeid", 6) == 0) &&
+                        ((i - param_eq) > 1U))
                     {
                         /* Found nodeid */
                         struct robotraconteurlite_const_string nodeid_str;
-                        nodeid_str.data = &url->data[param_eq + 1];
-                        nodeid_str.len = i - param_eq - 1;
+                        nodeid_str.data = &url->data[param_eq + 1U];
+                        nodeid_str.len = i - param_eq - 1U;
                         if (robotraconteurlite_nodeid_parse(&nodeid_str, &addr_out->nodeid) != 0)
                         {
                             return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
                         }
                     }
 
-                    param_start = i + 1;
+                    param_start = i + 1U;
                     param_eq = 0;
                     continue;
                 }

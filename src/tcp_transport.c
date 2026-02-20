@@ -1190,7 +1190,7 @@ static robotraconteurlite_status robotraconteurlite_tcp_connect_service_send_web
         (connect_data->service_address->http_path.data[0] == ((char)'?')))
     {
         /* Add space for forward slash */
-        send_len += 1;
+        send_len += 1U;
     }
 
     for (i = 0; i < (int)sizeof(websocket_key); i++)

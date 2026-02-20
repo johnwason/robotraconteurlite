@@ -1292,13 +1292,26 @@ robotraconteurlite_status robotraconteurlite_tcp_connect_service(struct robotrac
     connect_data->client_connection = c;
     c->client = connect_data;
 
-    if (FLAGS_CHECK(connect_data->service_address->flags, ROBOTRACONTEURLITE_ADDR_FLAGS_WEBSOCKET))
+    if (robotraconteurlite_string_cmp_c_str(&connect_data->service_address->scheme, "rr+ws://") == 0)
     {
         struct robotraconteurlite_tcp_transport_storage* storage = get_storage(c);
         FLAGS_SET(storage->tcp_transport_state, ROBOTRACONTEURLITE_TCP_TRANSPORT_STATE_IS_WEBSOCKET |
                                                     ROBOTRACONTEURLITE_TCP_TRANSPORT_STATE_IN_HTTP_HEADER);
         FLAGS_SET(c->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_BLOCK_SEND);
         return robotraconteurlite_tcp_connect_service_send_websocket_http_header(connect_data);
+    }
+    else
+    {
+        if (robotraconteurlite_string_cmp_c_str(&connect_data->service_address->scheme, "rr+tcp://") != 0)
+        {
+
+            return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    if (!FLAGS_CHECK(connect_data->service_address->flags, ROBOTRACONTEURLITE_ADDR_FLAGS_SOCKADDR_VALID))
+    {
+        return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
     }
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;

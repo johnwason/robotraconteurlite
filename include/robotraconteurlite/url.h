@@ -27,8 +27,7 @@ struct robotraconteurlite_sockaddr_storage
 
 /* robotraconteurlite_addr_flags */
 #define ROBOTRACONTEURLITE_ADDR_FLAGS_NULL 0x0U
-#define ROBOTRACONTEURLITE_ADDR_FLAGS_WEBSOCKET 0x1U
-#define ROBOTRACONTEURLITE_ADDR_FLAGS_SOCKADDR_VALID 0x2U
+#define ROBOTRACONTEURLITE_ADDR_FLAGS_SOCKADDR_VALID 0x1U
 
 struct robotraconteurlite_addr
 {

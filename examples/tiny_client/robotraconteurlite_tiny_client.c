@@ -44,9 +44,8 @@ and RRLITE_SUCCEEDED if Windows support required */
 
 /* #define TINY_CLIENT_WEBSOCKET 1 */
 
-const robotraconteurlite_u16 default_service_port = 22229;
-const char* default_service_ip_str = "127.0.0.1";
-const char* service_name = "tiny_service";
+const char* default_url = "rr+tcp://127.0.0.1:22229?service=tiny_service";
+
 const char* expected_root_object_type = "example.tiny_service.tiny_object";
 
 struct tiny_client_data
@@ -72,7 +71,6 @@ int main(int argc, const char* argv[])
     struct robotraconteurlite_node node;
     struct robotraconteurlite_nodeid node_id;
     struct robotraconteurlite_addr service_addr;
-    struct sockaddr_in* service_sockaddr = NULL;
     struct robotraconteurlite_node_client client;
     robotraconteurlite_timespec now = 0;
     robotraconteurlite_status rv = -1;
@@ -81,42 +79,15 @@ int main(int argc, const char* argv[])
     struct robotraconteurlite_user_storage data_storage;
     struct robotraconteurlite_node_request requests_head;
 
-    const char* service_ip_str = NULL;
-    robotraconteurlite_u16 service_port = 0;
-    int use_ws = 0;
+    const char* url = NULL;
 
     if (argc > 1)
     {
-        service_ip_str = argv[1];
+        url = argv[1];
     }
     else
     {
-        service_ip_str = default_service_ip_str;
-    }
-
-    if (argc > 2)
-    {
-        long temp_port = 0;
-        errno = 0;
-        temp_port = strtol(argv[2], NULL, 10);
-        if (errno != 0 || temp_port < 0 || temp_port > 65535)
-        {
-            printf("Invalid port number\n");
-            return -1;
-        }
-        service_port = (robotraconteurlite_u16)temp_port;
-    }
-    else
-    {
-        service_port = default_service_port;
-    }
-
-    if (argc > 3)
-    {
-        if (strcmp(argv[3], "ws") == 0)
-        {
-            use_ws = 1;
-        }
+        url = default_url;
     }
 
 #ifndef _WIN32
@@ -156,23 +127,10 @@ int main(int argc, const char* argv[])
     robotraconteurlite_node_set_requests_head(&node, &requests_head);
 
     /* Connect to the service */
-    (void)memset(&service_addr, 0, sizeof(service_addr));
-    robotraconteurlite_string_from_c_str(service_name, &service_addr.service_name);
-    service_sockaddr = (struct sockaddr_in*)&service_addr.socket_addr;
-    service_sockaddr->sin_family = AF_INET;
-    service_sockaddr->sin_port = robotraconteurlite_htons(service_port);
-    if (inet_pton(AF_INET, service_ip_str, &service_sockaddr->sin_addr) != 1)
+    if (RRLITE_FAILED(robotraconteurlite_url_parse_cstr(url, &service_addr)))
     {
-        printf("Could not convert service IP address\n");
+        printf("Could not parse URL\n");
         return -1;
-    }
-
-    if (use_ws != 0)
-    {
-        /* Use websocket connection */
-        ROBOTRACONTEURLITE_FLAGS_SET(service_addr.flags, ROBOTRACONTEURLITE_ADDR_FLAGS_WEBSOCKET);
-        robotraconteurlite_string_from_c_str("127.0.0.1", &service_addr.http_host);
-        robotraconteurlite_string_from_c_str("/", &service_addr.http_path);
     }
 
     (void)memset(&data, 0, sizeof(data));

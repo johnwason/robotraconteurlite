@@ -169,9 +169,16 @@ int main(int argc, const char* argv[])
     if (use_ws != 0)
     {
         /* Use websocket connection */
-        ROBOTRACONTEURLITE_FLAGS_SET(service_addr.flags, ROBOTRACONTEURLITE_ADDR_FLAGS_WEBSOCKET);
+        robotraconteurlite_string_from_c_str("rr+ws", &service_addr.scheme);
         robotraconteurlite_string_from_c_str("127.0.0.1", &service_addr.http_host);
         robotraconteurlite_string_from_c_str("/", &service_addr.http_path);
+        ROBOTRACONTEURLITE_FLAGS_SET(service_addr.flags, ROBOTRACONTEURLITE_ADDR_FLAGS_SOCKADDR_VALID);
+    }
+    else
+    {
+        /* Use TCP connection */
+        robotraconteurlite_string_from_c_str("rr+tcp", &service_addr.scheme);
+        ROBOTRACONTEURLITE_FLAGS_SET(service_addr.flags, ROBOTRACONTEURLITE_ADDR_FLAGS_SOCKADDR_VALID);
     }
 
     (void)memset(&client, 0, sizeof(client));

@@ -234,19 +234,19 @@ robotraconteurlite_status robotraconteurlite_connection_next_wake(struct robotra
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
 
-    if (connection->heartbeat_next_check_ms > 0)
+    if (connection->heartbeat_next_check_us > 0)
     {
-        if ((now > connection->heartbeat_next_check_ms) ||
+        if ((now > connection->heartbeat_next_check_us) ||
             /* cppcheck-suppress knownConditionTrueFalse */
-            ((connection->heartbeat_next_check_ms == 0) && (connection->heartbeat_period_ms > 0)))
+            ((connection->heartbeat_next_check_us == 0) && (connection->heartbeat_period_ms > 0)))
         {
             *next_wake = now;
             return ROBOTRACONTEURLITE_ERROR_SUCCESS;
         }
 
-        if (connection->heartbeat_next_check_ms < *next_wake)
+        if (connection->heartbeat_next_check_us < *next_wake)
         {
-            *next_wake = connection->heartbeat_next_check_ms;
+            *next_wake = connection->heartbeat_next_check_us;
         }
     }
 

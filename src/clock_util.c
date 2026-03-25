@@ -4,7 +4,7 @@
 #define FAILED ROBOTRACONTEURLITE_FAILED
 
 robotraconteurlite_status robotraconteurlite_clock_timeout_from_now(struct robotraconteurlite_clock* clock,
-                                                                    robotraconteurlite_i32 timeout_ms,
+                                                                    robotraconteurlite_i32 timeout_us,
                                                                     robotraconteurlite_timespec* timeout_out)
 {
     robotraconteurlite_timespec now = 0;
@@ -16,6 +16,6 @@ robotraconteurlite_status robotraconteurlite_clock_timeout_from_now(struct robot
         return rv;
     }
 
-    *timeout_out = now + (timeout_ms);
+    *timeout_out = now + (timeout_us);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }

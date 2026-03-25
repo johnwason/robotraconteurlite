@@ -25,23 +25,23 @@ robotraconteurlite_status robotraconteurlite_clock_init(struct robotraconteurlit
 {
     FILETIME ft;
     ULARGE_INTEGER ui;
-    robotraconteurlite_i64 monotonic_ms = 0;
-    robotraconteurlite_i64 realtime_ms = 0;
+    robotraconteurlite_i64 monotonic_us = 0;
+    robotraconteurlite_i64 realtime_us = 0;
 
     // Get the current system time (realtime)
     GetSystemTimeAsFileTime(&ft);
     ui.LowPart = ft.dwLowDateTime;
     ui.HighPart = ft.dwHighDateTime;
-    realtime_ms = (ui.QuadPart / 10000);
+    realtime_us = (ui.QuadPart / 10);
 
     // Get the current performance counter (monotonic)
     LARGE_INTEGER freq, counter;
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&counter);
-    monotonic_ms = (counter.QuadPart * 1000) / freq.QuadPart;
+    monotonic_us = (counter.QuadPart * 1000000) / freq.QuadPart;
 
     // Calculate the offset
-    clock->clock_epoch_offset = realtime_ms - monotonic_ms;
+    clock->clock_epoch_offset = realtime_us - monotonic_us;
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
@@ -50,13 +50,13 @@ robotraconteurlite_status robotraconteurlite_clock_gettime(struct robotraconteur
                                                            robotraconteurlite_timespec* now)
 {
     LARGE_INTEGER freq, counter;
-    robotraconteurlite_i64 monotonic_ms = 0;
+    robotraconteurlite_i64 monotonic_us = 0;
 
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&counter);
-    monotonic_ms = (counter.QuadPart * 1000) / freq.QuadPart;
+    monotonic_us = (counter.QuadPart * 1000000) / freq.QuadPart;
 
-    *now = monotonic_ms + clock->clock_epoch_offset;
+    *now = monotonic_us + clock->clock_epoch_offset;
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }

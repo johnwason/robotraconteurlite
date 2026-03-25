@@ -169,7 +169,7 @@ struct robotraconteurlite_connection
     /* Parameters */
     robotraconteurlite_i32 heartbeat_period_ms;
     robotraconteurlite_i32 heartbeat_timeout_ms;
-    robotraconteurlite_timespec heartbeat_next_check_ms;
+    robotraconteurlite_timespec heartbeat_next_check_us;
 
     /* Robot Raconteur information */
     robotraconteurlite_u32 local_endpoint;
@@ -339,15 +339,17 @@ ROBOTRACONTEURLITE_API void robotraconteurlite_connections_construct_from_array(
 static int robotraconteurlite_connection_is_heartbeat_timeout(const struct robotraconteurlite_connection* connection,
                                                               robotraconteurlite_timespec now)
 {
-    robotraconteurlite_i64 recv_diff_ms = now - connection->last_recv_message_time;
-    robotraconteurlite_i64 send_diff_ms = now - connection->last_send_message_time;
+    robotraconteurlite_i64 recv_diff_us = now - connection->last_recv_message_time;
+    robotraconteurlite_i64 send_diff_us = now - connection->last_send_message_time;
 
-    if ((recv_diff_ms > connection->heartbeat_timeout_ms) || (send_diff_ms > connection->heartbeat_timeout_ms))
+    if (((recv_diff_us / 1000) > connection->heartbeat_timeout_ms) ||
+        ((send_diff_us / 1000) > connection->heartbeat_timeout_ms))
     {
         return 2;
     }
 
-    if ((recv_diff_ms > connection->heartbeat_period_ms) || (send_diff_ms > connection->heartbeat_period_ms))
+    if (((recv_diff_us / 1000) > connection->heartbeat_period_ms) ||
+        ((send_diff_us / 1000) > connection->heartbeat_period_ms))
     {
         return 1;
     }

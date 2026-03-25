@@ -342,14 +342,14 @@ static int robotraconteurlite_connection_is_heartbeat_timeout(const struct robot
     robotraconteurlite_i64 recv_diff_us = now - connection->last_recv_message_time;
     robotraconteurlite_i64 send_diff_us = now - connection->last_send_message_time;
 
-    if ((recv_diff_us > (connection->heartbeat_timeout_ms * 1000)) ||
-        (send_diff_us > (connection->heartbeat_timeout_ms * 1000)))
+    if (((recv_diff_us / 1000) > connection->heartbeat_timeout_ms) ||
+        ((send_diff_us / 1000) > connection->heartbeat_timeout_ms))
     {
         return 2;
     }
 
-    if ((recv_diff_us > (connection->heartbeat_period_ms * 1000)) ||
-        (send_diff_us > (connection->heartbeat_period_ms * 1000)))
+    if (((recv_diff_us / 1000) > connection->heartbeat_period_ms) ||
+        ((send_diff_us / 1000) > connection->heartbeat_period_ms))
     {
         return 1;
     }

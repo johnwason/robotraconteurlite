@@ -229,7 +229,7 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
         if (c->heartbeat_next_check_us < now)
         {
             int heartbeat_ret = -1;
-            c->heartbeat_next_check_us = now + (c->heartbeat_period_ms * 1000);
+            c->heartbeat_next_check_us = now + (((robotraconteurlite_timespec)c->heartbeat_period_ms) * 1000);
 
             heartbeat_ret = robotraconteurlite_connection_is_heartbeat_timeout(c, now);
 
@@ -3006,7 +3006,6 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event2(struct robotra
             }
         }
         return robotraconteurlite_node_consume_event(event);
-        break;
     }
     default:
         break;

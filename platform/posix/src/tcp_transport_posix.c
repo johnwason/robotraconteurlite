@@ -278,7 +278,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_accept(
         /* False positive cppcheck warning for errno not set */
         /* cppcheck-suppress misra-c2012-22.10 */
         *errno_out = errno;
-        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+        return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
     }
 
     client_sock->sock = newsockfd;

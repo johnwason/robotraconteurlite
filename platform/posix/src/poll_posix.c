@@ -24,13 +24,13 @@
 #include <unistd.h>
 #include <errno.h>
 
-int robotraconteurlite_poll(struct robotraconteurlite_pollfd* fds, int nfds, int timeout)
+int robotraconteurlite_poll_impl(struct robotraconteurlite_pollfd* fds, int nfds, int timeout)
 {
     int ret = -1;
     /* cppcheck-suppress misra-c2012-11.3 */
     ret = poll((struct pollfd*)fds, (int)nfds, (int)timeout);
     /* False positive cppcheck warning for errno not set */
-    /* cppcheck-suppress misra-c2012-22.10 */
+    /* cppcheck-suppress [misra-c2012-22.10,misra-config] */
     if ((ret < 0) && (errno == EINTR))
     {
         return 0;

@@ -33,7 +33,7 @@ struct robotraconteurlite_messageelement_writer;
 
 {% for type,ctype in types %}
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_{{type}}_array(
-    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_{{type}}* array);
+    struct robotraconteurlite_messageelement_reader* element_reader, struct robotraconteurlite_array_{{type}}* dest_array);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_reader_read_data_{{type}}(
     struct robotraconteurlite_messageelement_reader* element_reader, {{ctype}}* value);
@@ -48,27 +48,32 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageeleme
 {% for type,ctype in types %}
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}(
     struct robotraconteurlite_messageelement_writer* element_writer,
-    const struct robotraconteurlite_string* element_name, {{ctype}} value);
+    const struct robotraconteurlite_const_string* element_name, {{ctype}} value);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_array(
     struct robotraconteurlite_messageelement_writer* element_writer,
-    const struct robotraconteurlite_string* element_name, const struct robotraconteurlite_array_{{type}}* value);
+    const struct robotraconteurlite_const_string* element_name, const struct robotraconteurlite_array_{{type}}* value);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer,
+    const char* element_name, {{ctype}} value);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_{{type}}_array_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer,
+    const char* element_name, const struct robotraconteurlite_array_{{type}}* value);
 
 {% endfor %}
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string(
     struct robotraconteurlite_messageelement_writer* element_writer,
-    const struct robotraconteurlite_string* element_name, const struct robotraconteurlite_string* value);
+    const struct robotraconteurlite_const_string* element_name, const struct robotraconteurlite_const_string* value);
 
-static robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str(
-    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name, const char* value)
-{
-    struct robotraconteurlite_string element_name_str;
-    struct robotraconteurlite_string value_str;
-    robotraconteurlite_string_from_c_str(element_name, &element_name_str);
-    robotraconteurlite_string_from_c_str(value, &value_str);
-    return robotraconteurlite_messageelement_writer_write_data_string(element_writer, &element_name_str, &value_str);
-}
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str(
+    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name,
+    const struct robotraconteurlite_const_string* value);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_string_c_str2(
+    struct robotraconteurlite_messageelement_writer* element_writer, const char* element_name, const char* value);
 
 #ifdef __cplusplus
 }

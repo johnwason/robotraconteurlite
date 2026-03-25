@@ -35,6 +35,10 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_clock_init(s
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_clock_gettime(struct robotraconteurlite_clock* clock, robotraconteurlite_timespec* now);
 
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_clock_timeout_from_now(struct robotraconteurlite_clock* clock, robotraconteurlite_i32 timeout_ms,
+                                          robotraconteurlite_timespec* timeout_out);
+
 #ifdef __cplusplus
 }
 #endif

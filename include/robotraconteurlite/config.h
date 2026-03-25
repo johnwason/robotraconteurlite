@@ -34,12 +34,12 @@
 
 #ifdef _WIN32
 #ifdef _WIN64
-#define ROBOTRACONTEURLITE_SOCKET unsigned long long
+#define ROBOTRACONTEURLITE_SOCKET_HANDLE unsigned long long
 #else
-#define ROBOTRACONTEURLITE_SOCKET unsigned long
+#define ROBOTRACONTEURLITE_SOCKET_HANDLE unsigned long
 #endif
 #else
-#define ROBOTRACONTEURLITE_SOCKET int
+#define ROBOTRACONTEURLITE_SOCKET_HANDLE int
 #endif
 
 #ifndef ROBOTRACONTEURLITE_NO_STDINT
@@ -47,17 +47,29 @@
 #include <stddef.h>
 #include <limits.h>
 #include <float.h>
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int8_t robotraconteurlite_i8;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint8_t robotraconteurlite_u8;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int16_t robotraconteurlite_i16;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint16_t robotraconteurlite_u16;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int32_t robotraconteurlite_i32;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint32_t robotraconteurlite_u32;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef int64_t robotraconteurlite_i64;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint64_t robotraconteurlite_u64;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef float robotraconteurlite_single;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef double robotraconteurlite_double;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef size_t robotraconteurlite_size_t;
+/* cppcheck-suppress misra-c2012-2.3 */
 typedef uint8_t robotraconteurlite_byte;
 #define ROBOTRACONTEURLITE_INT8_MIN INT8_MIN
 #define ROBOTRACONTEURLITE_INT8_MAX INT8_MAX
@@ -83,6 +95,10 @@ typedef uint8_t robotraconteurlite_byte;
 #define ROBOTRACONTEURLITE_SIZE_T_MIN 0
 #endif
 
+#ifndef ROBOTRACONTEURLITE_NO_STATUS
+typedef robotraconteurlite_i32 robotraconteurlite_status;
+#endif
+
 #ifndef ROBOTRACONTEURLITE_TRANSPORT_STORAGE_SIZE
 #define ROBOTRACONTEURLITE_TRANSPORT_STORAGE_SIZE 128
 #endif
@@ -93,6 +109,12 @@ typedef uint8_t robotraconteurlite_byte;
 
 #ifndef ROBOTRACONTEURLITE_SOCKADDR_STORAGE_SIZE
 #define ROBOTRACONTEURLITE_SOCKADDR_STORAGE_SIZE 128
+#endif
+
+#ifndef ROBOTRACONTEURLITE_NO_FUNCPTR
+#ifndef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+#define ROBOTRACONTEURLITE_HAVE_FUNCPTR
+#endif
 #endif
 
 #endif /* ROBOTRACONTEURLITE_CONFIG_H */

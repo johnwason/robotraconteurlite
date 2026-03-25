@@ -14,6 +14,7 @@
  */
 
 #include "robotraconteurlite/array.h"
+#include "robotraconteurlite/util.h"
 #include <string.h>
 #include <assert.h>
 
@@ -170,13 +171,13 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_vec(const struct ro
         robotraconteurlite_size_t dest_i_delta = dest->buffer_vec[dest_i].len - dest_i_pos;
         robotraconteurlite_size_t delta = 0;
 
-        if (source_i_delta <= 0U)
+        if (source_i_delta == 0U)
         {
             source_i++;
             source_i_pos = 0;
             continue;
         }
-        if (dest_i_delta <= 0U)
+        if (dest_i_delta == 0U)
         {
             dest_i++;
             dest_i_pos = 0;
@@ -320,13 +321,13 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_vec_ex(
         robotraconteurlite_size_t dest_i_delta = (dest->buffer_vec[dest_i].len * dest_elem_size) - dest_i_byte_pos;
         robotraconteurlite_size_t delta = 0;
 
-        if (source_i_delta <= 0U)
+        if (source_i_delta == 0U)
         {
             source_i++;
             source_i_byte_pos = 0;
             continue;
         }
-        if (dest_i_delta <= 0U)
+        if (dest_i_delta == 0U)
         {
             dest_i++;
             dest_i_byte_pos = 0;
@@ -370,6 +371,7 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_to_mem(
 }
 
 robotraconteurlite_status robotraconteurlite_buffer_vec_copy_from_mem(
+    /* cppcheck-suppress constParameterPointer*/
     struct robotraconteurlite_buffer_vec* dest, robotraconteurlite_size_t dest_pos,
     const robotraconteurlite_byte* source, robotraconteurlite_size_t source_len, robotraconteurlite_size_t source_pos,
     robotraconteurlite_size_t source_elem_size, robotraconteurlite_size_t source_count)
@@ -398,18 +400,17 @@ robotraconteurlite_status robotraconteurlite_buffer_vec_copy_to_string(
                                                      dest->len, dest_pos, 1, dest_count);
 }
 
-robotraconteurlite_status robotraconteurlite_buffer_vec_copy_from_string(struct robotraconteurlite_buffer_vec* dest_buf,
-                                                                         robotraconteurlite_size_t dest_buf_pos,
-                                                                         const struct robotraconteurlite_string* source,
-                                                                         robotraconteurlite_size_t source_pos,
-                                                                         robotraconteurlite_size_t source_count)
+robotraconteurlite_status robotraconteurlite_buffer_vec_copy_from_string(
+    struct robotraconteurlite_buffer_vec* dest_buf, robotraconteurlite_size_t dest_buf_pos,
+    const struct robotraconteurlite_const_string* source, robotraconteurlite_size_t source_pos,
+    robotraconteurlite_size_t source_count)
 {
     return robotraconteurlite_buffer_vec_copy_from_mem(
         dest_buf, dest_buf_pos, (const robotraconteurlite_byte*)source->data, source->len, source_pos, 1, source_count);
 }
 
-robotraconteurlite_status robotraconteurlite_string_cmp(const struct robotraconteurlite_string* str1,
-                                                        const struct robotraconteurlite_string* str2)
+robotraconteurlite_status robotraconteurlite_string_cmp(const struct robotraconteurlite_const_string* str1,
+                                                        const struct robotraconteurlite_const_string* str2)
 {
     assert(str1 != NULL);
     assert(str2 != NULL);
@@ -434,7 +435,33 @@ robotraconteurlite_status robotraconteurlite_string_cmp(const struct robotracont
     return memcmp(str1->data, str2->data, str1->len);
 }
 
-robotraconteurlite_u32 robotraconteurlite_string_hash(const struct robotraconteurlite_string* str)
+robotraconteurlite_status robotraconteurlite_string_cmp_mutable(const struct robotraconteurlite_string* str1,
+                                                                const struct robotraconteurlite_const_string* str2)
+{
+    assert(str1 != NULL);
+    assert(str2 != NULL);
+    assert(str1->data != NULL);
+    assert(str2->data != NULL);
+
+    if ((str1->len == 0U) && (str2->len == 0U))
+    {
+        return 0;
+    }
+
+    if (str1->len < str2->len)
+    {
+        return -1;
+    }
+
+    if (str1->len > str2->len)
+    {
+        return 1;
+    }
+
+    return memcmp(str1->data, str2->data, str1->len);
+}
+
+robotraconteurlite_u32 robotraconteurlite_string_hash(const struct robotraconteurlite_const_string* str)
 {
 
     robotraconteurlite_u32 str_len = 0;
@@ -460,7 +487,7 @@ robotraconteurlite_u32 robotraconteurlite_string_hash(const struct robotraconteu
     }
 }
 
-robotraconteurlite_status robotraconteurlite_string_copy_to(const struct robotraconteurlite_string* source,
+robotraconteurlite_status robotraconteurlite_string_copy_to(const struct robotraconteurlite_const_string* source,
                                                             struct robotraconteurlite_string* dest)
 {
 
@@ -489,10 +516,44 @@ robotraconteurlite_status robotraconteurlite_string_copy_to(const struct robotra
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_status robotraconteurlite_string_shallow_copy_to(const struct robotraconteurlite_string* source,
-                                                                    struct robotraconteurlite_string* dest)
+robotraconteurlite_status robotraconteurlite_string_copy_to_buffer_storage(
+    const struct robotraconteurlite_const_string* source, struct robotraconteurlite_const_string* dest,
+    char* buffer_storage, robotraconteurlite_size_t buffer_storage_len)
+{
+    struct robotraconteurlite_string temp_dest;
+    robotraconteurlite_status rv = -1;
+    assert(source != NULL);
+    assert(dest != NULL);
+    assert(buffer_storage != NULL);
+
+    temp_dest.data = buffer_storage;
+    temp_dest.len = buffer_storage_len;
+
+    rv = robotraconteurlite_string_copy_to(source, &temp_dest);
+    if (ROBOTRACONTEURLITE_FAILED(rv))
+    {
+        return rv;
+    }
+    dest->data = temp_dest.data;
+    dest->len = temp_dest.len;
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_string_shallow_copy_to(
+    const struct robotraconteurlite_const_string* source, struct robotraconteurlite_const_string* dest)
 {
 
+    assert(source != NULL);
+    assert(dest != NULL);
+
+    dest->data = source->data;
+    dest->len = source->len;
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_string_shallow_copy_from_mutable(
+    const struct robotraconteurlite_string* source, struct robotraconteurlite_const_string* dest)
+{
     assert(source != NULL);
     assert(dest != NULL);
 

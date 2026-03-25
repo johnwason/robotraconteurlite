@@ -44,12 +44,12 @@
 #define ROBOTRACONTEURLITE_ERROR_REQUEST_REMOTE_ERROR (-21)
 #define ROBOTRACONTEURLITE_ERROR_INVALID_PARAMETER (-22)
 #define ROBOTRACONTEURLITE_ERROR_SYSTEM_ERROR (-23)
+#define ROBOTRACONTEURLITE_ERROR_MEMBER_NOT_FOUND (-24)
+#define ROBOTRACONTEURLITE_ERROR_IN_PROGRESS (-25)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef robotraconteurlite_i32 robotraconteurlite_status;
 
 static robotraconteurlite_i32 robotraconteurlite_is_success(robotraconteurlite_status status)
 {

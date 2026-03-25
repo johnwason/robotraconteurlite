@@ -44,7 +44,7 @@ robotraconteurlite_status robotraconteurlite_nodeid_copy_to(const struct robotra
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_status robotraconteurlite_nodeid_parse(const struct robotraconteurlite_string* src_str,
+robotraconteurlite_status robotraconteurlite_nodeid_parse(const struct robotraconteurlite_const_string* src_str,
                                                           struct robotraconteurlite_nodeid* dst)
 {
     char buf[33];

@@ -25,16 +25,46 @@ extern "C" {
 
 struct robotraconteurlite_pollfd
 {
-    ROBOTRACONTEURLITE_SOCKET fd;
+    ROBOTRACONTEURLITE_SOCKET_HANDLE fd;
     short int events;
     short int revents;
 };
 
-int robotraconteurlite_poll(struct robotraconteurlite_pollfd* fds, int nfds, int timeout);
+struct robotraconteurlite_connection_socket;
+struct robotraconteurlite_connection_object;
+struct robotraconteurlite_node;
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status
-robotraconteurlite_wait_next_wake(struct robotraconteurlite_clock* clock, struct robotraconteurlite_pollfd* pollfds,
-                                  robotraconteurlite_size_t pollfd_count, robotraconteurlite_timespec wake_time);
+int robotraconteurlite_poll_impl(struct robotraconteurlite_pollfd* fds, int nfds, int timeout);
+
+robotraconteurlite_status robotraconteurlite_poll_impl_add_fd(ROBOTRACONTEURLITE_SOCKET_HANDLE sock_handle,
+                                                              robotraconteurlite_u16 sock_flags,
+                                                              struct robotraconteurlite_pollfd* pollfds,
+                                                              robotraconteurlite_size_t* pollfd_count,
+                                                              robotraconteurlite_size_t max_pollfds);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_poll_pollfds_add_socket(
+    struct robotraconteurlite_connection_socket* sock, struct robotraconteurlite_pollfd* pollfds,
+    robotraconteurlite_size_t* pollfd_count, robotraconteurlite_size_t max_pollfds);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_poll_pollfds_add_sockets(
+    struct robotraconteurlite_connection_socket* sock, struct robotraconteurlite_pollfd* pollfds,
+    robotraconteurlite_size_t* pollfd_count, robotraconteurlite_size_t max_pollfds);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_poll_pollfds_next_wake(
+    struct robotraconteurlite_clock* clock, struct robotraconteurlite_pollfd* pollfds,
+    robotraconteurlite_size_t pollfd_count, robotraconteurlite_timespec wake_time);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_poll_connections_next_wake(
+    struct robotraconteurlite_connection_object* connections_head, struct robotraconteurlite_clock* clock,
+    struct robotraconteurlite_pollfd* pollfds_storage, robotraconteurlite_size_t pollfds_storage_count,
+    robotraconteurlite_timespec wake_time);
+
+#ifdef ROBOTRACONTEURLITE_HAVE_FUNCPTR
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_poll_connections_run(
+    struct robotraconteurlite_node* node, struct robotraconteurlite_clock* clock,
+    struct robotraconteurlite_pollfd* pollfds_storage, robotraconteurlite_size_t pollfds_storage_count,
+    robotraconteurlite_timespec wake_time);
+#endif
 
 #ifdef __cplusplus
 }

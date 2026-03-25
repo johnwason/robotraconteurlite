@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+if((CMAKE_VERSION VERSION_GREATER 3.12 OR CMAKE_VERSION VERSION_EQUAL 3.12))
+    cmake_minimum_required(VERSION 3.12...3.31)
+else()
+    cmake_minimum_required(VERSION 3.5)
+endif()
 project(robotraconteurlite VERSION 0.1.0)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -30,14 +34,18 @@ endif()
 
 set(ROBOTRACONTEURLITE_SRC
     include/robotraconteurlite/array.h
+    include/robotraconteurlite/clock.h
     include/robotraconteurlite/config.h
+    include/robotraconteurlite/connection.h
     include/robotraconteurlite/err.h
+    include/robotraconteurlite/message_data.h
     include/robotraconteurlite/message.h
     include/robotraconteurlite/node.h
     include/robotraconteurlite/nodeid.h
     include/robotraconteurlite/robotraconteurlite.h
     include/robotraconteurlite/tcp_transport.h
-    include/robotraconteurlite/clock.h
+    include/robotraconteurlite/util.h
+    include/robotraconteurlite/url.h
     src/array.c
     src/array_types.c
     src/connection.c
@@ -46,11 +54,15 @@ set(ROBOTRACONTEURLITE_SRC
     src/node.c
     src/nodeid.c
     src/tcp_transport.c
-    src/poll.c)
+    src/poll.c
+    src/util.c
+    src/clock_util.c
+    src/url.c)
 
 if(ROBOTRACONTEURLITE_POSIX)
-    set(ROBOTRACONTEURLITE_SRC ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c
-                               platform/posix/src/clock_posix.c platform/posix/src/poll_posix.c)
+    set(ROBOTRACONTEURLITE_SRC
+        ${ROBOTRACONTEURLITE_SRC} platform/posix/src/tcp_transport_posix.c platform/posix/src/clock_posix.c
+        platform/posix/src/poll_posix.c platform/posix/src/url_posix.c)
 endif()
 
 if(ROBOTRACONTEURLITE_USE_LIBUUID)
@@ -60,7 +72,7 @@ endif()
 if(WIN32)
     set(ROBOTRACONTEURLITE_SRC
         ${ROBOTRACONTEURLITE_SRC} platform/win32/src/tcp_transport_win32.c platform/win32/src/clock_win32.c
-        platform/win32/src/poll_win32.c platform/win32/src/nodeid_win32.c)
+        platform/win32/src/poll_win32.c platform/win32/src/nodeid_win32.c platform/win32/src/url_win32.c)
 endif()
 
 add_library(robotraconteurlite ${ROBOTRACONTEURLITE_SRC})

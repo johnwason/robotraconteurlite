@@ -114,15 +114,15 @@ robotraconteurlite_status robotraconteurlite_tcp_base64_encode(const robotracont
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_socket_recv_nonblocking(
-    ROBOTRACONTEURLITE_SOCKET sock, robotraconteurlite_byte* buffer, robotraconteurlite_size_t* pos,
-    robotraconteurlite_size_t len, int* errno_out, struct robotraconteurlite_connection* connection)
+    struct robotraconteurlite_connection_socket* sock, robotraconteurlite_byte* buffer, robotraconteurlite_size_t* pos,
+    robotraconteurlite_size_t len, int* errno_out)
 {
     robotraconteurlite_size_t pos1 = *pos;
     WSABUF wsaBuf;
     DWORD flags = 0;
     DWORD bytesReceived;
 
-    FLAGS_CLEAR(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_WOULD_BLOCK);
+    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
 
     if (sock == 0)
     {
@@ -133,13 +133,13 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_recv_nonblocking(
     {
         wsaBuf.buf = &buffer[*pos];
         wsaBuf.len = len - (*pos - pos1);
-        int ret = WSARecv(sock, &wsaBuf, 1, &bytesReceived, &flags, NULL, NULL);
+        int ret = WSARecv(sock->sock, &wsaBuf, 1, &bytesReceived, &flags, NULL, NULL);
         if (ret == SOCKET_ERROR)
         {
             int wsaError = WSAGetLastError();
             if (wsaError == WSAEWOULDBLOCK)
             {
-                FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_WOULD_BLOCK);
+                FLAGS_SET(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
                 return ROBOTRACONTEURLITE_ERROR_SUCCESS;
             }
             *errno_out = wsaError;
@@ -163,15 +163,15 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_recv_nonblocking(
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_socket_send_nonblocking(
-    ROBOTRACONTEURLITE_SOCKET sock, const robotraconteurlite_byte* buffer, robotraconteurlite_size_t* pos,
-    robotraconteurlite_size_t len, int* errno_out, struct robotraconteurlite_connection* connection)
+    struct robotraconteurlite_connection_socket* sock, const robotraconteurlite_byte* buffer,
+    robotraconteurlite_size_t* pos, robotraconteurlite_size_t len, int* errno_out)
 {
     robotraconteurlite_size_t pos1 = *pos;
     WSABUF wsaBuf;
     DWORD bytesSent;
     DWORD flags = 0;
 
-    FLAGS_CLEAR(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_SEND_WOULD_BLOCK);
+    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_SEND_WOULD_BLOCK);
 
     if (sock == 0)
     {
@@ -182,13 +182,13 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_send_nonblocking(
     {
         wsaBuf.buf = &buffer[*pos];
         wsaBuf.len = len - (*pos - pos1);
-        int ret = WSASend(sock, &wsaBuf, 1, &bytesSent, flags, NULL, NULL);
+        int ret = WSASend(sock->sock, &wsaBuf, 1, &bytesSent, flags, NULL, NULL);
         if (ret == SOCKET_ERROR)
         {
             int wsaError = WSAGetLastError();
             if (wsaError == WSAEWOULDBLOCK)
             {
-                FLAGS_SET(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_SEND_WOULD_BLOCK);
+                FLAGS_SET(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_SEND_WOULD_BLOCK);
                 return ROBOTRACONTEURLITE_ERROR_SUCCESS;
             }
             *errno_out = wsaError;
@@ -212,13 +212,12 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_send_nonblocking(
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_socket_begin_server(
-    const struct sockaddr_storage* serv_addr, robotraconteurlite_size_t backlog, ROBOTRACONTEURLITE_SOCKET* sock_out,
-    int* errno_out, struct robotraconteurlite_connection_acceptor* acceptor)
+    const struct sockaddr_storage* serv_addr, robotraconteurlite_size_t backlog,
+    struct robotraconteurlite_connection_socket* sock_out, int* errno_out)
 {
     /* Create socket */
     SOCKET sock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, 0);
     u_long mode = 1;
-    ROBOTRACONTEURLITE_UNUSED(acceptor);
     if (sock == INVALID_SOCKET)
     {
         *errno_out = WSAGetLastError();
@@ -249,11 +248,13 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_begin_server(
         return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
     }
 
-    *sock_out = sock;
+    sock_out->sock = sock;
+    sock_out->flags = ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE;
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-static robotraconteurlite_status robotraconteurlite_tcp_configure_socket(ROBOTRACONTEURLITE_SOCKET sock, int* errno_out)
+static robotraconteurlite_status robotraconteurlite_tcp_configure_socket(ROBOTRACONTEURLITE_SOCKET_HANDLE sock,
+                                                                         int* errno_out)
 {
     int flags = 1;
     u_long mode = 1;
@@ -282,60 +283,55 @@ static robotraconteurlite_status robotraconteurlite_tcp_configure_socket(ROBOTRA
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_socket_accept(ROBOTRACONTEURLITE_SOCKET acceptor_sock,
-                                                               ROBOTRACONTEURLITE_SOCKET* client_sock, int* errno_out,
-                                                               struct robotraconteurlite_connection_acceptor* acceptor)
+robotraconteurlite_status robotraconteurlite_tcp_socket_accept(
+    struct robotraconteurlite_connection_socket* acceptor_sock,
+    struct robotraconteurlite_connection_socket* client_sock, int* errno_out)
 {
     /* Accept connection */
     struct sockaddr_in cli_addr;
     int clilen = sizeof(cli_addr);
-    FLAGS_CLEAR(acceptor->acceptor_state, ROBOTRACONTEURLITE_CONNECTION_ACCEPTOR_STATUS_FLAGS_ACCEPT_WOULD_BLOCK);
+    FLAGS_CLEAR(acceptor_sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
     *errno_out = 0;
-    SOCKET newsockfd = WSAAccept(acceptor_sock, (struct sockaddr*)&cli_addr, &clilen, NULL, NULL);
+    SOCKET newsockfd = WSAAccept(acceptor_sock->sock, (struct sockaddr*)&cli_addr, &clilen, NULL, NULL);
     if (newsockfd == INVALID_SOCKET)
     {
         int wsaError = WSAGetLastError();
         if (wsaError == WSAEWOULDBLOCK)
         {
-            FLAGS_SET(acceptor->acceptor_state, ROBOTRACONTEURLITE_CONNECTION_ACCEPTOR_STATUS_FLAGS_ACCEPT_WOULD_BLOCK);
+            FLAGS_SET(acceptor_sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
             return ROBOTRACONTEURLITE_ERROR_RETRY;
         }
         *errno_out = wsaError;
         return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
     }
 
-    *client_sock = newsockfd;
+    client_sock->sock = newsockfd;
+    client_sock->flags = ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE;
 
     return robotraconteurlite_tcp_configure_socket(newsockfd, errno_out);
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_socket_close(ROBOTRACONTEURLITE_SOCKET sock,
-                                                              struct robotraconteurlite_connection* connection)
+robotraconteurlite_status robotraconteurlite_tcp_socket_close(struct robotraconteurlite_connection_socket* sock)
 {
-    ROBOTRACONTEURLITE_UNUSED(connection);
-    if (sock == 0)
+    if (sock->sock == 0)
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
-    closesocket(sock);
+    closesocket(sock->sock);
+    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_server_socket_close(
-    ROBOTRACONTEURLITE_SOCKET sock, struct robotraconteurlite_connection_acceptor* acceptor)
+robotraconteurlite_status robotraconteurlite_tcp_server_socket_close(struct robotraconteurlite_connection_socket* sock)
 {
-    ROBOTRACONTEURLITE_UNUSED(acceptor);
-    if (sock == 0)
+    if (sock->sock == 0)
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
-    closesocket(sock);
+    closesocket(sock->sock);
+    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
-
-robotraconteurlite_u16 robotraconteurlite_ntohs(robotraconteurlite_u16 netshort) { return ntohs(netshort); }
-
-robotraconteurlite_u16 robotraconteurlite_htons(robotraconteurlite_u16 hostshort) { return htons(hostshort); }
 
 robotraconteurlite_u64 robotraconteurlite_be64toh(robotraconteurlite_u64 big_endian_64bits)
 {
@@ -355,13 +351,12 @@ robotraconteurlite_u64 robotraconteurlite_be64toh(robotraconteurlite_u64 big_end
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_socket_connect(struct robotraconteurlite_sockaddr_storage* addr,
-                                                                ROBOTRACONTEURLITE_SOCKET* sock_out, int* errno_out,
-                                                                struct robotraconteurlite_connection* connection)
+                                                                struct robotraconteurlite_connection_socket* sock_out,
+                                                                int* errno_out)
 {
-    ROBOTRACONTEURLITE_SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
-    ROBOTRACONTEURLITE_UNUSED(connection);
+    ROBOTRACONTEURLITE_SOCKET_HANDLE sock = socket(AF_INET, SOCK_STREAM, 0);
     *errno_out = 0;
-    robotraconteurlite_status rv = robotraconteurlite_tcp_configure_socket(sock, &errno_out);
+    robotraconteurlite_status rv = robotraconteurlite_tcp_configure_socket(sock, errno_out);
     if (FAILED(rv))
     {
         return rv;
@@ -371,18 +366,21 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_connect(struct robotraco
     {
         if (WSAGetLastError() == WSAEWOULDBLOCK)
         {
-            *sock_out = sock;
+            sock_out->sock = sock;
+            sock_out->flags = ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE;
             return ROBOTRACONTEURLITE_ERROR_SUCCESS;
         }
         closesocket(sock);
         *errno_out = WSAGetLastError();
         return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
     }
-    *sock_out = sock;
+    sock_out->sock = sock;
+    sock_out->flags = ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE;
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-static robotraconteurlite_status robotraconteurlite_poll_add_fd(ROBOTRACONTEURLITE_SOCKET sock, short extra_events,
+static robotraconteurlite_status robotraconteurlite_poll_add_fd(ROBOTRACONTEURLITE_SOCKET_HANDLE sock,
+                                                                short extra_events,
                                                                 struct robotraconteurlite_pollfd* pollfds,
                                                                 robotraconteurlite_size_t* pollfd_count,
                                                                 robotraconteurlite_size_t max_pollfds)
@@ -401,66 +399,77 @@ static robotraconteurlite_status robotraconteurlite_poll_add_fd(ROBOTRACONTEURLI
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_acceptor_poll_add_fd(
-    struct robotraconteurlite_connection_acceptor* acceptor, struct robotraconteurlite_connection* connection_head,
-    struct robotraconteurlite_pollfd* pollfds, robotraconteurlite_size_t* pollfd_count,
-    robotraconteurlite_size_t max_pollfds)
+robotraconteurlite_status robotraconteurlite_poll_impl_add_fd(ROBOTRACONTEURLITE_SOCKET_HANDLE sock_handle,
+                                                              robotraconteurlite_u16 sock_flags,
+                                                              struct robotraconteurlite_pollfd* pollfds,
+                                                              robotraconteurlite_size_t* pollfd_count,
+                                                              robotraconteurlite_size_t max_pollfds)
 {
     short extra_events = 0;
-    struct robotraconteurlite_connection* c = connection_head;
-    while (c != NULL)
-    {
-        if (FLAGS_CHECK(c->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_IDLE))
-        {
-            extra_events = POLLIN;
-            break;
-        }
-        c = c->next;
-    }
-
-    return robotraconteurlite_poll_add_fd(acceptor->sock, extra_events, pollfds, pollfd_count, max_pollfds);
-}
-
-robotraconteurlite_status robotraconteurlite_tcp_connection_poll_add_fd(
-    struct robotraconteurlite_connection* connection, struct robotraconteurlite_pollfd* pollfds,
-    robotraconteurlite_size_t* pollfd_count, robotraconteurlite_size_t max_pollfds)
-{
-    short extra_events = 0;
-    if ((FLAGS_CHECK(connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_IDLE)) || (connection->sock == 0))
+    if ((!FLAGS_CHECK(sock_flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE)) || (sock_handle == 0))
     {
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
 
-    if (FLAGS_CHECK(connection->connection_state,
-                    (ROBOTRACONTEURLITE_STATUS_FLAGS_SEND_REQUESTED | ROBOTRACONTEURLITE_STATUS_FLAGS_SENDING)))
+    if (FLAGS_CHECK(sock_flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_SEND))
     {
         extra_events |= POLLOUT;
     }
 
-    if (FLAGS_CHECK(connection->connection_state,
-                    (ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVE_REQUESTED | ROBOTRACONTEURLITE_STATUS_FLAGS_RECEIVING |
-                     ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING)))
+    if (FLAGS_CHECK(sock_flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_RECEIVE))
     {
         extra_events |= POLLIN;
     }
 
-    return robotraconteurlite_poll_add_fd(connection->sock, extra_events, pollfds, pollfd_count, max_pollfds);
+    return robotraconteurlite_poll_add_fd(sock_handle, extra_events, pollfds, pollfd_count, max_pollfds);
 }
 
-robotraconteurlite_status robotraconteurlite_tcp_connections_poll_add_fds(
-    struct robotraconteurlite_connection* connection_head, struct robotraconteurlite_pollfd* pollfds,
-    robotraconteurlite_size_t* pollfd_count, robotraconteurlite_size_t max_pollfds)
+robotraconteurlite_status robotraconteurlite_tcp_socket_is_connection_complete(ROBOTRACONTEURLITE_SOCKET_HANDLE sock,
+                                                                               int* errno_out)
 {
-    struct robotraconteurlite_connection* c = connection_head;
-    while (c != NULL)
+
+    WSAPOLLFD fds[1];
+    int ret = 0;
+
+    memset(fds, 0, sizeof(fds));
+
+    fds[0].fd = sock;
+    fds[0].events = POLLOUT;
+
+    *errno_out = 0;
+
+    ret = WSAPoll(fds, 1, 0);
+
+    if (ret < 0)
     {
-        robotraconteurlite_status rv =
-            robotraconteurlite_tcp_connection_poll_add_fd(c, pollfds, pollfd_count, max_pollfds);
-        if (FAILED(rv))
+        *errno_out = WSAGetLastError();
+        if (sock != 0)
         {
-            return rv;
+            (void)closesocket(sock);
         }
-        c = c->next;
+        return ROBOTRACONTEURLITE_ERROR_SYSTEM_ERROR;
     }
-    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+
+    if (ret == 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_RETRY;
+    }
+
+    /* cppcheck-suppress misra-config */
+    if ((fds[0].revents & POLLOUT) != 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+    }
+
+    /* cppcheck-suppress misra-config */
+    if ((fds[0].revents & POLLERR) != 0)
+    {
+        if (sock != 0)
+        {
+            (void)closesocket(sock);
+        }
+        return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
+    }
+
+    return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
 }

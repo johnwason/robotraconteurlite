@@ -31,8 +31,16 @@ robotraconteurlite_status robotraconteurlite_clock_init(struct robotraconteurlit
     struct timespec realtime_time;
     robotraconteurlite_i64 monotonic_ms = 0;
     robotraconteurlite_i64 realtime_ms = 0;
-    clock_gettime(CLOCK_MONOTONIC, &monotonic_time);
-    clock_gettime(CLOCK_REALTIME, &realtime_time);
+    /* cppcheck-suppress misra-config */
+    if (clock_gettime(CLOCK_MONOTONIC, &monotonic_time) != 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    /* cppcheck-suppress misra-config */
+    if (clock_gettime(CLOCK_REALTIME, &realtime_time) != 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
 
     /* Convert both times to robotraconteurlite_u64 ms */
     monotonic_ms = (monotonic_time.tv_sec * 1000) + (monotonic_time.tv_nsec / 1000000);
@@ -44,12 +52,17 @@ robotraconteurlite_status robotraconteurlite_clock_init(struct robotraconteurlit
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
+/* cppcheck-suppress constParameterPointer*/
 robotraconteurlite_status robotraconteurlite_clock_gettime(struct robotraconteurlite_clock* clock,
                                                            robotraconteurlite_timespec* now)
 {
     struct timespec monotonic_time;
     robotraconteurlite_i64 monotonic_ms = 0;
-    clock_gettime(CLOCK_MONOTONIC, &monotonic_time);
+    /* cppcheck-suppress misra-config */
+    if (clock_gettime(CLOCK_MONOTONIC, &monotonic_time) != 0)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
 
     monotonic_ms = (monotonic_time.tv_sec * 1000) + (monotonic_time.tv_nsec / 1000000);
 

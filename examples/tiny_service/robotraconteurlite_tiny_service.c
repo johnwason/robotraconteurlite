@@ -30,6 +30,10 @@
 
 #include <robotraconteurlite/robotraconteurlite.h>
 
+/* Import shorthand macros for message access */
+#define ROBOTRACONTEURLITE_NODE_SHORTHAND_MACROS
+#include "robotraconteurlite/node_macros.h"
+
 #define NUM_CONNECTIONS 4
 #define CONNECTION_BUFFER_SIZE 8096
 
@@ -56,99 +60,51 @@ robotraconteurlite_status tiny_object_handle_message(struct robotraconteurlite_n
     switch (s_evt->event->received_message.received_message_entry_header.entry_type)
     {
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYGETREQ: {
-        if (robotraconteurlite_node_event_is_member(s_evt->event, "d1"))
+        if (rrl_s_is_member("d1"))
         {
             robotraconteurlite_double d1 = 1.234;
             struct robotraconteurlite_node_send_messageentry_data send_data;
             robotraconteurlite_status rv = -1;
-            send_data.node = s_evt->event->node;
-            send_data.connection = s_evt->event->connection;
-            rv = robotraconteurlite_node_begin_send_messageentry_response(
-                &send_data, &s_evt->event->received_message.received_message_entry_header);
-            if (RETRY(rv))
-            {
-                return ROBOTRACONTEURLITE_ERROR_RETRY;
-            }
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not begin send message entry response\n");
-                return -1;
-            }
 
-            if (robotraconteurlite_messageelement_writer_write_double_c_str(&send_data.element_writer, "value", d1))
-            {
-                printf("Could not write double\n");
-                return -1;
-            }
-            rv = robotraconteurlite_node_end_send_messageentry(&send_data);
-            if (RETRY(rv))
-            {
-                return ROBOTRACONTEURLITE_ERROR_RETRY;
-            }
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not end send message entry response\n");
-                return rv;
-            }
+            rrl_s_begin_send();
+
+            rrl_s_write_double("value", d1);
+
+            rrl_s_end_send();
             return rv;
         }
         else
         {
             printf("Unknown property get request, responding with error\n");
             /* Send error response */
-            return robotraconteurlite_node_event_respond_member_not_found(s_evt->event);
+            rrl_s_send_member_not_found();
         }
     }
     case ROBOTRACONTEURLITE_MESSAGEENTRYTYPE_PROPERTYSETREQ: {
-        if (robotraconteurlite_node_event_is_member(s_evt->event, "d1"))
+        if (rrl_s_is_member("d1"))
         {
-            /* Find "value" message element */
-            struct robotraconteurlite_messageelement_reader element_reader;
             robotraconteurlite_status rv = -1;
             robotraconteurlite_double d1 = 0.0;
 
-            rv = robotraconteurlite_messageentry_reader_find_element_verify_scalar_c_str(
-                &s_evt->event->received_message.entry_reader, "value", &element_reader,
-                ROBOTRACONTEURLITE_DATATYPE_DOUBLE);
-
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not find element or type mismatch\n");
-                return robotraconteurlite_node_event_respond_element_read_error(s_evt->event, rv);
-            }
-
-            rv = robotraconteurlite_messageelement_reader_read_data_double(&element_reader, &d1);
-            if (RRLITE_FAILED(rv))
-            {
-                printf("Could not read double\n");
-                /* Send error response */
-                return robotraconteurlite_node_event_respond_element_read_error(s_evt->event, rv);
-            }
+            rrl_s_read_double("value", &d1);
 
             printf("Got set d1=%f\n", d1);
 
             /* Send empty response */
-            rv = robotraconteurlite_node_send_messageentry_empty_response(
-                s_evt->event->node, s_evt->event->connection,
-                &s_evt->event->received_message.received_message_entry_header);
-            if (RETRY(rv))
-            {
-                return ROBOTRACONTEURLITE_ERROR_RETRY;
-            }
+            rrl_s_send_empty_response();
             return rv;
         }
         else
         {
             printf("Unknown property set request, responding with error\n");
-
             /* Send error response */
-            return robotraconteurlite_node_event_respond_member_not_found(s_evt->event);
+            rrl_s_send_member_not_found();
         }
     }
     default: {
         printf("Could not handle message, responding with error\n");
         /* Send error response */
-        return robotraconteurlite_node_event_respond_member_not_found(s_evt->event);
+        rrl_s_send_member_not_found();
     }
     }
 

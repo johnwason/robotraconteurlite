@@ -42,9 +42,9 @@ robotraconteurlite_status robotraconteurlite_clock_init(struct robotraconteurlit
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
 
-    /* Convert both times to robotraconteurlite_u64 ms */
-    monotonic_ms = (monotonic_time.tv_sec * 1000) + (monotonic_time.tv_nsec / 1000000);
-    realtime_ms = (realtime_time.tv_sec * 1000) + (realtime_time.tv_nsec / 1000000);
+    /* Convert both times to robotraconteurlite_u64 us */
+    monotonic_ms = (monotonic_time.tv_sec * 1000000) + (monotonic_time.tv_nsec / 1000);
+    realtime_ms = (realtime_time.tv_sec * 1000000) + (realtime_time.tv_nsec / 1000);
 
     /* Calculate the offset */
     clock->clock_epoch_offset = realtime_ms - monotonic_ms;
@@ -64,7 +64,7 @@ robotraconteurlite_status robotraconteurlite_clock_gettime(struct robotraconteur
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
 
-    monotonic_ms = (monotonic_time.tv_sec * 1000) + (monotonic_time.tv_nsec / 1000000);
+    monotonic_ms = (monotonic_time.tv_sec * 1000000) + (monotonic_time.tv_nsec / 1000);
 
     *now = monotonic_ms + clock->clock_epoch_offset;
 

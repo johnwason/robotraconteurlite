@@ -226,10 +226,10 @@ robotraconteurlite_status robotraconteurlite_node_next_event(struct robotraconte
             return ROBOTRACONTEURLITE_ERROR_SUCCESS;
         }
 
-        if (c->heartbeat_next_check_ms < now)
+        if (c->heartbeat_next_check_us < now)
         {
             int heartbeat_ret = -1;
-            c->heartbeat_next_check_ms = now + c->heartbeat_period_ms;
+            c->heartbeat_next_check_us = now + (c->heartbeat_period_ms * 1000);
 
             heartbeat_ret = robotraconteurlite_connection_is_heartbeat_timeout(c, now);
 
@@ -2330,7 +2330,7 @@ robotraconteurlite_status robotraconteurlite_node_request_set_timeout(struct rob
                                                                       struct robotraconteurlite_clock* clock,
                                                                       robotraconteurlite_i32 timeout_ms)
 {
-    return robotraconteurlite_clock_timeout_from_now(clock, timeout_ms, &request->timeout_timespec);
+    return robotraconteurlite_clock_timeout_from_now(clock, timeout_ms * 1000, &request->timeout_timespec);
 }
 
 robotraconteurlite_status robotraconteurlite_client_send_heartbeat(struct robotraconteurlite_node* node,
@@ -3005,6 +3005,7 @@ robotraconteurlite_status robotraconteurlite_node_run_next_event2(struct robotra
                 return rv;
             }
         }
+        return robotraconteurlite_node_consume_event(event);
         break;
     }
     default:

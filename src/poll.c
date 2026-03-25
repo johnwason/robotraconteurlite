@@ -89,7 +89,7 @@ robotraconteurlite_status robotraconteurlite_poll_pollfds_next_wake(struct robot
         return ROBOTRACONTEURLITE_ERROR_SUCCESS;
     }
 
-    timeout_i64 = wake_time - now;
+    timeout_i64 = (wake_time - now) / 1000;
     if (timeout_i64 > INT_MAX)
     {
         /* This should never happen! */

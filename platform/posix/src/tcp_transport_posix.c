@@ -264,7 +264,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_accept(
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     int newsockfd = -1;
-    FLAGS_CLEAR(acceptor_sock->sock, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
+    FLAGS_CLEAR(acceptor_sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
     newsockfd = accept(acceptor_sock->sock, (struct sockaddr*)&cli_addr, &clilen);
     if (newsockfd < 0)
     {

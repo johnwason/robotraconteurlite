@@ -110,7 +110,7 @@ static robotraconteurlite_status robotraconteurlite_message_read_header_string(
     }
     else
     {
-        assert(str->data != NULL);
+        assert((str->data != NULL) || (str->len == 0U));
         if (str->len < str_len)
         {
             return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
@@ -3888,7 +3888,7 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_raw(
 
     assert(element_writer != NULL);
     assert(element_name != NULL);
-    assert(data_buf != NULL);
+    assert((data_buf != NULL) || (data_len == 0U));
 
     o = element_writer->buffer_offset;
 

@@ -75,9 +75,9 @@ robotraconteurlite_status robotraconteurlite_buffer_copy(const struct robotracon
                                                          robotraconteurlite_size_t count)
 {
     assert(source != NULL);
-    assert(source->data != NULL);
+    assert((source->data != NULL) || (source->len == 0U));
     assert(dest != NULL);
-    assert(dest->data != NULL);
+    assert((dest->data != NULL) || (source->len == 0U));
 
     if (count == 0U)
     {
@@ -208,9 +208,9 @@ robotraconteurlite_status robotraconteurlite_buffer_copy_ex(
     robotraconteurlite_size_t dest_elem_size, robotraconteurlite_size_t dest_count)
 {
     assert(source != NULL);
-    assert(source->data != NULL);
+    assert((source->data != NULL) || (source->len == 0U));
     assert(dest != NULL);
-    assert(dest->data != NULL);
+    assert((dest->data != NULL) || (dest->len == 0U));
 
     if ((source_count == 0U) && (dest_count == 0U))
     {
@@ -414,8 +414,8 @@ robotraconteurlite_status robotraconteurlite_string_cmp(const struct robotracont
 {
     assert(str1 != NULL);
     assert(str2 != NULL);
-    assert(str1->data != NULL);
-    assert(str2->data != NULL);
+    assert((str1->data != NULL) || (str1->len == 0U));
+    assert((str2->data != NULL) || (str2->len == 0U));
 
     if ((str1->len == 0U) && (str2->len == 0U))
     {
@@ -440,8 +440,8 @@ robotraconteurlite_status robotraconteurlite_string_cmp_mutable(const struct rob
 {
     assert(str1 != NULL);
     assert(str2 != NULL);
-    assert(str1->data != NULL);
-    assert(str2->data != NULL);
+    assert((str1->data != NULL) || (str1->len == 0U));
+    assert((str2->data != NULL) || (str2->len == 0U));
 
     if ((str1->len == 0U) && (str2->len == 0U))
     {
@@ -467,7 +467,7 @@ robotraconteurlite_u32 robotraconteurlite_string_hash(const struct robotraconteu
     robotraconteurlite_u32 str_len = 0;
 
     assert(str != NULL);
-    assert(str->data != NULL);
+    assert((str->data != NULL) || (str->len == 0U));
 
     str_len = (robotraconteurlite_u32)str->len;
 
@@ -503,8 +503,8 @@ robotraconteurlite_status robotraconteurlite_string_copy_to(const struct robotra
     {
         return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
     }
-    assert(source->data != NULL);
-    assert(dest->data != NULL);
+    assert((source->data != NULL) || (source->len == 0U));
+    assert((dest->data != NULL) || (dest->len == 0U));
 
     if (source->len > dest->len)
     {

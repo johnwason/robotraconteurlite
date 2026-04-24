@@ -64,8 +64,8 @@ robotraconteurlite_status robotraconteurlite_clock_gettime(struct robotraconteur
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
 
-    monotonic_ms = (((robotraconteurlite_timespec)monotonic_time.tv_sec) * 1000000) 
-    + (((robotraconteurlite_timespec)monotonic_time.tv_nsec) / 1000);
+    monotonic_ms = (((robotraconteurlite_timespec)monotonic_time.tv_sec) * 1000000) +
+                   (((robotraconteurlite_timespec)monotonic_time.tv_nsec) / 1000);
 
     *now = monotonic_ms + clock->clock_epoch_offset;
 

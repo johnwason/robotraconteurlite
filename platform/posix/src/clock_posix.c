@@ -57,14 +57,15 @@ robotraconteurlite_status robotraconteurlite_clock_gettime(struct robotraconteur
                                                            robotraconteurlite_timespec* now)
 {
     struct timespec monotonic_time;
-    robotraconteurlite_i64 monotonic_ms = 0;
+    robotraconteurlite_timespec monotonic_ms = 0;
     /* cppcheck-suppress misra-config */
     if (clock_gettime(CLOCK_MONOTONIC, &monotonic_time) != 0)
     {
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
 
-    monotonic_ms = (monotonic_time.tv_sec * 1000000) + (monotonic_time.tv_nsec / 1000);
+    monotonic_ms = (((robotraconteurlite_timespec)monotonic_time.tv_sec) * 1000000) +
+                   (((robotraconteurlite_timespec)monotonic_time.tv_nsec) / 1000);
 
     *now = monotonic_ms + clock->clock_epoch_offset;
 

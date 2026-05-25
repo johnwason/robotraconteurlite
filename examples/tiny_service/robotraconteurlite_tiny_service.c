@@ -259,7 +259,7 @@ int main(int argc, const char* argv[])
 #endif
 
     /* Seed rand with the current time */
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     /* Initialize the clock */
     robotraconteurlite_clock_init(&clock);

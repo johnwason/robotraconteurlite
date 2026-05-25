@@ -21,6 +21,7 @@
 #define FLAGS_CHECK ROBOTRACONTEURLITE_FLAGS_CHECK
 #define FLAGS_SET ROBOTRACONTEURLITE_FLAGS_SET
 #define FLAGS_CLEAR ROBOTRACONTEURLITE_FLAGS_CLEAR
+#define FLAGS_CLEAR16 ROBOTRACONTEURLITE_FLAGS_CLEAR16
 
 #define FAILED ROBOTRACONTEURLITE_FAILED
 #define RETRY ROBOTRACONTEURLITE_RETRY
@@ -194,6 +195,8 @@ void robotraconteurlite_connections_construct_from_array(
     assert(connections_fixed_storage_len > 0U);
     assert(buffer_count >= (connections_fixed_storage_len * 2U));
     assert(buffer_size > 1024U);
+
+    ROBOTRACONTEURLITE_UNUSED(buffer_count);
 
     for (i = 0; i < connections_fixed_storage_len; i++)
     {
@@ -720,7 +723,7 @@ robotraconteurlite_status robotraconteurlite_connection_impl_prepare_wait(
     }
     else
     {
-        FLAGS_CLEAR(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_SEND);
+        FLAGS_CLEAR16(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_SEND);
     }
 
     if (FLAGS_CHECK(connection->connection_state,
@@ -730,7 +733,7 @@ robotraconteurlite_status robotraconteurlite_connection_impl_prepare_wait(
     }
     else
     {
-        FLAGS_CLEAR(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_RECEIVE);
+        FLAGS_CLEAR16(connection->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_RECEIVE);
     }
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
@@ -741,7 +744,7 @@ robotraconteurlite_status robotraconteurlite_connection_acceptor_impl_prepare_wa
     struct robotraconteurlite_connection_object* connection_head)
 {
     struct robotraconteurlite_connection* c = robotraconteurlite_connection_first(connection_head);
-    FLAGS_CLEAR(acceptor->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_RECEIVE);
+    FLAGS_CLEAR16(acceptor->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_WANT_RECEIVE);
     while (c != NULL)
     {
         if (FLAGS_CHECK(c->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_IDLE))

@@ -480,7 +480,7 @@ void robotraconteurlite_buffer_single_test(void** state)
     struct robotraconteurlite_array_single singles;
     struct robotraconteurlite_array_single singles2;
 
-    robotraconteurlite_single d1 = 10.23;
+    robotraconteurlite_single d1 = 10.23f;
     robotraconteurlite_single d2 = 0.0;
 
     ROBOTRACONTEURLITE_UNUSED(state);
@@ -546,8 +546,8 @@ void robotraconteurlite_buffer_csingle_test(void** state)
     memset(&d1, 0, sizeof(d1));
     memset(&d2, 0, sizeof(d2));
 
-    d1.real = 10.23;
-    d1.imag = 11.34;
+    d1.real = 10.23f;
+    d1.imag = 11.34f;
 
     ROBOTRACONTEURLITE_UNUSED(state);
 

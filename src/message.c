@@ -92,7 +92,7 @@ robotraconteurlite_status robotraconteurlite_message_reader_init(struct robotrac
 
 static robotraconteurlite_status robotraconteurlite_message_read_header_string(
     /* cppcheck-suppress constParameterPointer*/
-    struct robotraconteurlite_buffer_vec* buffer, robotraconteurlite_size_t offset, robotraconteurlite_u16 str_len,
+    struct robotraconteurlite_buffer_vec* buffer, robotraconteurlite_size_t offset, robotraconteurlite_size_t str_len,
     struct robotraconteurlite_string* str)
 {
     robotraconteurlite_status rv = -1;
@@ -2514,7 +2514,12 @@ static robotraconteurlite_status robotraconteurlite_message_header_string_with_l
     const struct robotraconteurlite_const_string* str, robotraconteurlite_size_t* size)
 {
     robotraconteurlite_size_t s1 = 0;
-    robotraconteurlite_status rv = robotraconteurlite_message_uint_x_size(str->len, &s1);
+    robotraconteurlite_status rv = -1;
+    if (str->len > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+    rv = robotraconteurlite_message_uint_x_size((robotraconteurlite_u32)str->len, &s1);
     if (FAILED(rv))
     {
         return rv;
@@ -2530,7 +2535,11 @@ static robotraconteurlite_status robotraconteurlite_message_write_header_string_
     const struct robotraconteurlite_const_string* str)
 {
     robotraconteurlite_status rv = -1;
-    rv = robotraconteurlite_message_write_uint16(buffer, offset, str->len);
+    if (str->len > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+    rv = robotraconteurlite_message_write_uint16(buffer, offset, (robotraconteurlite_u16)str->len);
     if (FAILED(rv))
     {
         return rv;
@@ -2555,7 +2564,11 @@ static robotraconteurlite_status robotraconteurlite_message_write_header_string_
     const struct robotraconteurlite_const_string* str)
 {
     robotraconteurlite_status rv = -1;
-    rv = robotraconteurlite_message_write_uint_x(buffer, offset, str->len);
+    if (str->len > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+    rv = robotraconteurlite_message_write_uint_x(buffer, offset, (robotraconteurlite_u32)str->len);
     if (FAILED(rv))
     {
         return rv;
@@ -2678,7 +2691,11 @@ robotraconteurlite_status robotraconteurlite_message_writer_write_header2_ex(
     }
 
     buffer_info->entry_count_offset = *offset;
-    rv = robotraconteurlite_message_write_uint16(writer->buffer, offset, header->entry_count);
+    if (header->entry_count > ROBOTRACONTEURLITE_UINT16_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+    rv = robotraconteurlite_message_write_uint16(writer->buffer, offset, (robotraconteurlite_u16)header->entry_count);
     if (FAILED(rv))
     {
         return rv;
@@ -2800,7 +2817,11 @@ robotraconteurlite_status robotraconteurlite_message_writer_write_header4_ex(
     {
         robotraconteurlite_size_t s = 0;
         robotraconteurlite_u32 header_size2 = 0;
-        rv = robotraconteurlite_message_len_plus_uint_x(header_size, &header_size2, &s);
+        if (header_size > ROBOTRACONTEURLITE_UINT32_MAX)
+        {
+            return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+        }
+        rv = robotraconteurlite_message_len_plus_uint_x((robotraconteurlite_u32)header_size, &header_size2, &s);
         if (FAILED(rv))
         {
             return rv;
@@ -2834,6 +2855,11 @@ robotraconteurlite_status robotraconteurlite_message_writer_write_header4_ex(
     if (FAILED(rv))
     {
         return rv;
+    }
+
+    if (header_size > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
     }
 
     rv = robotraconteurlite_message_write_uint_x(writer->buffer, offset, (robotraconteurlite_u32)header_size);
@@ -2950,8 +2976,13 @@ robotraconteurlite_status robotraconteurlite_message_writer_write_header4_ex(
         return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
     }
 
+    if (header_size > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
     buffer_info->entry_start_offset = *offset;
-    header->header_size = header_size;
+    header->header_size = (robotraconteurlite_u32)header_size;
     buffer_info->header_size = header_size;
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
@@ -3019,7 +3050,13 @@ robotraconteurlite_status robotraconteurlite_message_writer_end_message(
 
     message_size = entry_writer->entries_written_size + header->header_size;
 
-    rv = robotraconteurlite_buffer_vec_copy_from_uint32(writer->buffer, writer->message_size_offset, message_size);
+    if (message_size > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
+    rv = robotraconteurlite_buffer_vec_copy_from_uint32(writer->buffer, writer->message_size_offset,
+                                                        (robotraconteurlite_u32)message_size);
     if (FAILED(rv))
     {
         return rv;
@@ -3056,7 +3093,12 @@ robotraconteurlite_status robotraconteurlite_message_writer_end_message(
         }
     }
 
-    header->message_size = message_size;
+    if (message_size > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
+    header->message_size = (robotraconteurlite_u32)message_size;
     header->entry_count = (robotraconteurlite_u32)entry_writer->entries_written_count;
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
@@ -3333,6 +3375,8 @@ robotraconteurlite_status robotraconteurlite_messageentry_writer_end_entry(
     assert(entry_writer != NULL);
     assert(header != NULL);
     assert(element_writer != NULL);
+
+    ROBOTRACONTEURLITE_UNUSED(header);
 
     entry_size = (robotraconteurlite_u32)(entry_writer->entry_header_size + element_writer->elements_written_size);
 
@@ -3643,13 +3687,19 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_end_nested_el
     assert(header != NULL);
     assert(nested_element_writer != NULL);
 
+    ROBOTRACONTEURLITE_UNUSED(header);
+
     element_size = element_writer->element_header_size + nested_element_writer->elements_written_size;
+    if (element_size > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
 
     switch (element_writer->message_version)
     {
     case 2: {
         o = element_writer->element_size_offset;
-        rv = robotraconteurlite_message_write_uint32(element_writer->buffer, &o, element_size);
+        rv = robotraconteurlite_message_write_uint32(element_writer->buffer, &o, (robotraconteurlite_u32)element_size);
         if (FAILED(rv))
         {
             return rv;
@@ -3666,8 +3716,8 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_end_nested_el
         break;
     }
     case 4: {
-        rv = robotraconteurlite_message_write_padded_uint_x_val(element_writer->buffer,
-                                                                element_writer->element_size_offset, element_size);
+        rv = robotraconteurlite_message_write_padded_uint_x_val(
+            element_writer->buffer, element_writer->element_size_offset, (robotraconteurlite_u32)element_size);
         if (FAILED(rv))
         {
             return rv;
@@ -3757,8 +3807,13 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_he
         return rv;
     }
 
+    if (data_len > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
     buffer_info->element_count_offset = *offset;
-    rv = robotraconteurlite_message_write_uint32(element_writer->buffer, offset, data_len);
+    rv = robotraconteurlite_message_write_uint32(element_writer->buffer, offset, (robotraconteurlite_u32)data_len);
     if (FAILED(rv))
     {
         return rv;
@@ -3799,7 +3854,11 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_he
 
     {
         robotraconteurlite_size_t s = 0;
-        rv = robotraconteurlite_message_uint_x_size(data_len, &s);
+        if (data_len > ROBOTRACONTEURLITE_UINT32_MAX)
+        {
+            return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+        }
+        rv = robotraconteurlite_message_uint_x_size((robotraconteurlite_u32)data_len, &s);
         if (FAILED(rv))
         {
             return rv;
@@ -3817,7 +3876,7 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_he
 
     {
         robotraconteurlite_size_t s = 0;
-        rv = robotraconteurlite_message_len_plus_uint_x(elem_size, &elem_size2, &s);
+        rv = robotraconteurlite_message_len_plus_uint_x((robotraconteurlite_u32)elem_size, &elem_size2, &s);
         if (FAILED(rv))
         {
             return rv;
@@ -3861,8 +3920,13 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_write_data_he
         return rv;
     }
 
+    if (data_len > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
     buffer_info->element_count_offset = ROBOTRACONTEURLITE_SIZE_T_MAX;
-    rv = robotraconteurlite_message_write_uint_x(element_writer->buffer, offset, data_len);
+    rv = robotraconteurlite_message_write_uint_x(element_writer->buffer, offset, (robotraconteurlite_u32)data_len);
     if (FAILED(rv))
     {
         return rv;

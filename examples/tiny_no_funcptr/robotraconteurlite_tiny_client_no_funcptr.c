@@ -76,7 +76,7 @@ int main(int argc, const char* argv[])
     robotraconteurlite_status rv = -1;
     struct robotraconteurlite_event event;
     struct robotraconteurlite_const_string nodename_str;
-    robotraconteurlite_u64 end_time = 0;
+    robotraconteurlite_timespec end_time = 0;
     enum tiny_client_state state = TINY_CLIENT_STATE_INIT;
     struct robotraconteurlite_node_send_messageentry_data request_data;
 
@@ -134,7 +134,7 @@ int main(int argc, const char* argv[])
 #endif
 
     /* Seed rand with the current time */
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     /* Initialize the clock */
     robotraconteurlite_clock_init(&rr_clock);

@@ -870,11 +870,13 @@ void robotraconteurlite_message_run_reader_basictest(robotraconteurlite_byte* me
 
 void robotraconteurlite_message_reader_basictest(void** state)
 {
+    ROBOTRACONTEURLITE_UNUSED(state);
     robotraconteurlite_message_run_reader_basictest(message2, sizeof(message2), 2);
 }
 
 void robotraconteurlite_message4_reader_basictest(void** state)
 {
+    ROBOTRACONTEURLITE_UNUSED(state);
     robotraconteurlite_message_run_reader_basictest(message4, sizeof(message4), 4);
 }
 
@@ -1239,6 +1241,8 @@ void robotraconteurlite_message_writer_basictest(void** state)
     robotraconteurlite_byte buffer_bytes[5000];
     robotraconteurlite_size_t buffer_bytes_len = sizeof(buffer_bytes);
 
+    ROBOTRACONTEURLITE_UNUSED(state);
+
     robotraconteurlite_message_run_writer_basictest(buffer_bytes, &buffer_bytes_len, 2, 0xFF);
 
     assert_true(buffer_bytes_len == sizeof(message2));
@@ -1249,6 +1253,8 @@ void robotraconteurlite_message4_writer_basictest(void** state)
 {
     robotraconteurlite_byte buffer_bytes[5000];
     robotraconteurlite_size_t buffer_bytes_len = sizeof(buffer_bytes);
+
+    ROBOTRACONTEURLITE_UNUSED(state);
 
     robotraconteurlite_message_run_writer_basictest(buffer_bytes, &buffer_bytes_len, 4, 0xFF);
 
@@ -1261,6 +1267,8 @@ void robotraconteurlite_message4_writer_basictest_masked(void** state)
     robotraconteurlite_size_t buffer_bytes_len = sizeof(buffer_bytes);
 
     robotraconteurlite_u8 message_mask = ROBOTRACONTEURLITE_MESSAGE_FLAGS_MULTIPLE_ENTRIES;
+
+    ROBOTRACONTEURLITE_UNUSED(state);
 
     robotraconteurlite_message_run_writer_basictest(buffer_bytes, &buffer_bytes_len, 4, message_mask);
 
@@ -1296,6 +1304,8 @@ void robotraconteurlite_message4_writer_basictest_single_entry(void** state)
 {
     robotraconteurlite_byte buffer_bytes[5000];
     robotraconteurlite_size_t buffer_bytes_len = sizeof(buffer_bytes);
+
+    ROBOTRACONTEURLITE_UNUSED(state);
 
     {
         robotraconteurlite_u8 message_flags_mask = 0;

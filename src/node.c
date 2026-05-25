@@ -123,7 +123,7 @@ robotraconteurlite_status robotraconteurlite_node_remove_connection(
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
-void static robotraconteurlite_clear_event(struct robotraconteurlite_event* event)
+static void robotraconteurlite_clear_event(struct robotraconteurlite_event* event)
 {
     (void)memset(event, 0, sizeof(struct robotraconteurlite_event));
 }
@@ -598,7 +598,8 @@ robotraconteurlite_status robotraconteurlite_node_event_special_request(struct r
     {
         robotraconteurlite_status rv = robotraconteurlite_connection_send_messageentry_error_response(
             event->node, event->connection, &event->received_message.received_message_entry_header,
-            ROBOTRACONTEURLITE_ERROR_INVALID_OPERATION, "RobotRaconteur.InvalidOperation", "Invalid operation");
+            ROBOTRACONTEURLITE_MESSAGEERRORTYPE_INVALIDOPERATION, "RobotRaconteur.InvalidOperation",
+            "Invalid operation");
         if (RETRY(rv))
         {
             return ROBOTRACONTEURLITE_ERROR_RETRY;
@@ -2066,9 +2067,10 @@ robotraconteurlite_status robotraconteurlite_client_handshake(struct robotracont
         robotraconteurlite_u32 old_connection_state = 0;
         if (client->client_connection->local_endpoint == 0U)
         {
-            client->client_connection->local_endpoint = rand();
+            client->client_connection->local_endpoint = (robotraconteurlite_u32)rand();
         }
-        client->client_connection->last_request_id = 100 + (rand() % 100000);
+        client->client_connection->last_request_id =
+            (robotraconteurlite_u32)(100U + (((robotraconteurlite_u32)rand()) % 100000U));
         /* Spoof being connected to avoid error... */
         old_connection_state = client->client_connection->connection_state;
         FLAGS_CLEAR(client->client_connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING);

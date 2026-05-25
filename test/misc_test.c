@@ -105,6 +105,7 @@ static int compare_nodeid(const struct robotraconteurlite_addr* addr, const char
 
 void robotraconteurlite_url_parse_test(void** state)
 {
+    ROBOTRACONTEURLITE_UNUSED(state);
     {
         const char* url1 = "rr+tcp://192.168.1.123:113/?service=test_service";
         const char* url2 = "rr+tcp://192.168.1.123/?nodename=test_node&service=test_service";

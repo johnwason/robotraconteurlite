@@ -120,7 +120,7 @@ void robotraconteurlite_arraytest_buffer_vec_copy_vec(void** state)
                 }
                 else
                 {
-                    c = rand() % (sizeof(a1) - pos);
+                    c = ((robotraconteurlite_size_t)rand()) % (sizeof(a1) - pos);
                     if (i < 4)
                     {
                         c = c / 2;
@@ -140,10 +140,11 @@ void robotraconteurlite_arraytest_buffer_vec_copy_vec(void** state)
         assert_true(len_bufa == sizeof(a1));
         assert_true(len_bufb == sizeof(a2));
 
-        bufa_vec_start = rand() % sizeof(a1);
-        bufb_vec_start = rand() % sizeof(a2);
+        bufa_vec_start = ((robotraconteurlite_size_t)rand()) % sizeof(a1);
+        bufb_vec_start = ((robotraconteurlite_size_t)rand()) % sizeof(a2);
 
-        count = rand() % (sizeof(a1) - (bufa_vec_start > bufb_vec_start ? bufa_vec_start : bufb_vec_start));
+        count = ((robotraconteurlite_size_t)rand()) %
+                (sizeof(a1) - (bufa_vec_start > bufb_vec_start ? bufa_vec_start : bufb_vec_start));
 
         robotraconteurlite_buffer_vec_copy_vec(&bufa_vec, bufa_vec_start, &bufb_vec, bufb_vec_start, count);
 
@@ -226,7 +227,7 @@ void robotraconteurlite_arraytest_buffer_vec_copy_vec_ex(void** state)
                 }
                 else
                 {
-                    c = rand() % ((sizeof(a1) / *buf_vec_els[buf_i]) - pos);
+                    c = ((robotraconteurlite_size_t)rand()) % ((sizeof(a1) / *buf_vec_els[buf_i]) - pos);
                     if (i < 4)
                     {
                         c = c / 2;
@@ -246,8 +247,8 @@ void robotraconteurlite_arraytest_buffer_vec_copy_vec_ex(void** state)
         assert_true(len_bufa == (sizeof(a1) / bufa_vec_el));
         assert_true(len_bufb == (sizeof(a2) / bufb_vec_el));
 
-        bufa_vec_start = rand() % (sizeof(a1) / bufa_vec_el);
-        bufb_vec_start = rand() % (sizeof(a2) / bufb_vec_el);
+        bufa_vec_start = ((robotraconteurlite_size_t)rand()) % (sizeof(a1) / bufa_vec_el);
+        bufb_vec_start = ((robotraconteurlite_size_t)rand()) % (sizeof(a2) / bufb_vec_el);
         bufa_vec_count = ((sizeof(a1) / bufa_vec_el) - bufa_vec_start);
         bufb_vec_count = ((sizeof(a2) / bufb_vec_el) - bufb_vec_start);
         bufa_vec_count_b = bufa_vec_count * bufa_vec_el;
@@ -256,7 +257,7 @@ void robotraconteurlite_arraytest_buffer_vec_copy_vec_ex(void** state)
         count_bytes = bufa_vec_count_b < bufb_vec_count_b ? bufa_vec_count_b : bufb_vec_count_b;
         big_el = bufa_vec_el > bufb_vec_el ? bufa_vec_el : bufb_vec_el;
 
-        count_bytes = (rand() % count_bytes);
+        count_bytes = (((robotraconteurlite_size_t)rand()) % count_bytes);
         count_bytes = count_bytes - (count_bytes % big_el);
 
         assert_return_code(robotraconteurlite_buffer_vec_copy_vec_ex(

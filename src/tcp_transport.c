@@ -28,6 +28,7 @@
 #define FLAGS_CHECK ROBOTRACONTEURLITE_FLAGS_CHECK
 #define FLAGS_SET ROBOTRACONTEURLITE_FLAGS_SET
 #define FLAGS_CLEAR ROBOTRACONTEURLITE_FLAGS_CLEAR
+#define FLAGS_CLEAR16 ROBOTRACONTEURLITE_FLAGS_CLEAR16
 
 #define FAILED ROBOTRACONTEURLITE_FAILED
 #define SUCCEEDED ROBOTRACONTEURLITE_SUCCEEDED
@@ -173,7 +174,8 @@ void robotraconteurlite_tcp_acceptor_construct(struct robotraconteurlite_connect
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_acceptor_listen(
-    struct robotraconteurlite_connection_acceptor* acceptor, const struct sockaddr_storage* serv_addr, int backlog)
+    struct robotraconteurlite_connection_acceptor* acceptor, const struct sockaddr_storage* serv_addr,
+    robotraconteurlite_size_t backlog)
 {
 
     int last_errno = -1;
@@ -195,7 +197,7 @@ robotraconteurlite_status robotraconteurlite_tcp_acceptor_close(struct robotraco
     if (acceptor->head.sock.sock != 0)
     {
         (void)robotraconteurlite_tcp_server_socket_close(&acceptor->head.sock);
-        FLAGS_CLEAR(acceptor->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
+        FLAGS_CLEAR16(acceptor->head.sock.flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
     }
 
     return 0;
@@ -367,16 +369,16 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_buffer_recv_w
     }
     if (FLAGS_CHECK(storage->tcp_transport_state, ROBOTRACONTEURLITE_TCP_TRANSPORT_STATE_RECV_WEBSOCKET_IN_FRAME))
     {
-        robotraconteurlite_u32 recv_len =
+        robotraconteurlite_size_t recv_len =
             storage->recv_websocket_frame_len + (connection->recv_buffer_pos - storage->recv_websocket_frame_pos);
         int last_errno = -1;
-        robotraconteurlite_u32 prev_recv_buffer_pos = 0;
+        robotraconteurlite_size_t prev_recv_buffer_pos = 0;
         robotraconteurlite_status rv = -1;
         robotraconteurlite_size_t n = 0;
         robotraconteurlite_size_t i = 0;
         if (recv_len > len)
         {
-            recv_len = (robotraconteurlite_u32)len;
+            recv_len = len;
         }
 
         prev_recv_buffer_pos = connection->recv_buffer_pos;
@@ -435,12 +437,12 @@ static robotraconteurlite_status robotraconteurlite_tcp_websocket_random_mask(
     struct robotraconteurlite_connection* connection, robotraconteurlite_u8 mask[4])
 {
     /* TODO: use better random source */
-    robotraconteurlite_u32 random_val = rand();
+    robotraconteurlite_u32 random_val = (robotraconteurlite_u32)rand();
     ROBOTRACONTEURLITE_UNUSED(connection);
-    mask[0] = (random_val >> 24) & 0xFFU;
-    mask[1] = (random_val >> 16) & 0xFFU;
-    mask[2] = (random_val >> 8) & 0xFFU;
-    mask[3] = random_val & 0xFFU;
+    mask[0] = (robotraconteurlite_u8)((random_val >> 24) & 0xFFU);
+    mask[1] = (robotraconteurlite_u8)((random_val >> 16) & 0xFFU);
+    mask[2] = (robotraconteurlite_u8)((random_val >> 8) & 0xFFU);
+    mask[3] = (robotraconteurlite_u8)(random_val & 0xFFU);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
@@ -733,7 +735,8 @@ static robotraconteurlite_status robotraconteurlite_tcp_connection_handshake_htt
     /* NOLINTEND(bugprone-not-null-terminated-result) */
 
     /* Set the send message length */
-    connection->send_message_len = STRCONST_HTTP_RESPONSE_1_LEN + sha1_base64_len + STRCONST_HTTP_RESPONSE_2_LEN;
+    connection->send_message_len =
+        (robotraconteurlite_u32)(STRCONST_HTTP_RESPONSE_1_LEN + sha1_base64_len + STRCONST_HTTP_RESPONSE_2_LEN);
     assert(connection->send_message_len <= connection->send_buffer_len);
 
     /* Send the response */
@@ -1178,10 +1181,10 @@ static robotraconteurlite_status robotraconteurlite_tcp_connect_service_send_web
     robotraconteurlite_byte* send_buf = NULL;
     int i = 0;
     robotraconteurlite_byte websocket_key[STRCONST_HTTP_SEC_WEBSOCKET_KEY_LEN];
-    robotraconteurlite_u32 send_len = STRCONST_HTTP_REQUEST_1_LEN + connect_data->service_address->http_path.len +
-                                      STRCONST_HTTP_REQUEST_2_LEN + connect_data->service_address->http_host.len +
-                                      STRCONST_HTTP_REQUEST_3_LEN + WEBSOCKET_KEY_BASE64_LEN +
-                                      STRCONST_HTTP_REQUEST_4_LEN;
+    robotraconteurlite_u32 send_len =
+        (robotraconteurlite_u32)(STRCONST_HTTP_REQUEST_1_LEN + connect_data->service_address->http_path.len +
+                                 STRCONST_HTTP_REQUEST_2_LEN + connect_data->service_address->http_host.len +
+                                 STRCONST_HTTP_REQUEST_3_LEN + WEBSOCKET_KEY_BASE64_LEN + STRCONST_HTTP_REQUEST_4_LEN);
     robotraconteurlite_size_t sec_b64_send_len = send_len;
     assert(connect_data->client_connection->head.transport_type == ROBOTRACONTEURLITE_TCP_TRANSPORT);
     assert(connect_data->client_connection->send_buffer_pos == 0U);

@@ -43,6 +43,7 @@
 #define FLAGS_CHECK ROBOTRACONTEURLITE_FLAGS_CHECK
 #define FLAGS_SET ROBOTRACONTEURLITE_FLAGS_SET
 #define FLAGS_CLEAR ROBOTRACONTEURLITE_FLAGS_CLEAR
+#define FLAGS_CLEAR16 ROBOTRACONTEURLITE_FLAGS_CLEAR16
 
 #define FAILED ROBOTRACONTEURLITE_FAILED
 
@@ -67,7 +68,7 @@ robotraconteurlite_status robotraconteurlite_tcp_base64_encode(const robotracont
 {
 #ifdef ROBOTRACONTEURLITE_USE_OPENSSL
     /* Use OpenSSL base64 implementation */
-    robotraconteurlite_size_t len = 0;
+    long len = 0;
     char* base64_data_ptr = NULL; /* Make space for annoying null byte */
     BIO* bmem = BIO_new(BIO_s_mem());
     BIO* b64 = BIO_new(BIO_f_base64());
@@ -76,9 +77,14 @@ robotraconteurlite_status robotraconteurlite_tcp_base64_encode(const robotracont
     BIO_write(b64, binary_data, (int)binary_len);
     BIO_flush(b64);
     len = BIO_get_mem_data(bmem, &base64_data_ptr);
-    assert(len <= *base64_len);
-    *base64_len = len;
-    (void)memcpy(base64_data, base64_data_ptr, len);
+    if (len <= 0)
+    {
+        BIO_free_all(b64);
+        return ROBOTRACONTEURLITE_ERROR_INTERNAL_ERROR;
+    }
+    assert((robotraconteurlite_size_t)(len) <= *base64_len);
+    *base64_len = (robotraconteurlite_size_t)len;
+    (void)memcpy(base64_data, base64_data_ptr, (size_t)len);
     BIO_free_all(b64);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 #else
@@ -93,7 +99,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_recv_nonblocking(
     robotraconteurlite_size_t len, int* errno_out)
 {
     robotraconteurlite_size_t pos1 = *pos;
-    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
+    FLAGS_CLEAR16(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
     while ((*pos - pos1) < len)
     {
         ssize_t ret = recv(sock->sock, &buffer[*pos], len - (*pos - pos1), MSG_DONTWAIT);
@@ -112,7 +118,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_recv_nonblocking(
             *errno_out = errno;
             return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
         }
-        *pos += ret;
+        *pos += (robotraconteurlite_size_t)ret;
         if (ret == 0)
         {
             if (*pos == pos1)
@@ -134,7 +140,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_send_nonblocking(
     robotraconteurlite_size_t* pos, robotraconteurlite_size_t len, int* errno_out)
 {
     robotraconteurlite_size_t pos1 = *pos;
-    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_SEND_WOULD_BLOCK);
+    FLAGS_CLEAR16(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_SEND_WOULD_BLOCK);
     while ((*pos - pos1) < len)
     {
         ssize_t ret = send(sock->sock, &buffer[*pos], len - (*pos - pos1), MSG_DONTWAIT);
@@ -152,7 +158,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_send_nonblocking(
             *errno_out = errno;
             return ROBOTRACONTEURLITE_ERROR_CONNECTION_ERROR;
         }
-        *pos += ret;
+        *pos += (robotraconteurlite_size_t)ret;
         if (ret == 0)
         {
             if (*pos == pos1)
@@ -264,7 +270,7 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_accept(
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     int newsockfd = -1;
-    FLAGS_CLEAR(acceptor_sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
+    FLAGS_CLEAR16(acceptor_sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_RECEIVE_WOULD_BLOCK);
     newsockfd = accept(acceptor_sock->sock, (struct sockaddr*)&cli_addr, &clilen);
     if (newsockfd < 0)
     {
@@ -290,14 +296,14 @@ robotraconteurlite_status robotraconteurlite_tcp_socket_accept(
 robotraconteurlite_status robotraconteurlite_tcp_socket_close(struct robotraconteurlite_connection_socket* sock)
 {
     (void)close(sock->sock);
-    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
+    FLAGS_CLEAR16(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 
 robotraconteurlite_status robotraconteurlite_tcp_server_socket_close(struct robotraconteurlite_connection_socket* sock)
 {
     (void)close(sock->sock);
-    FLAGS_CLEAR(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
+    FLAGS_CLEAR16(sock->flags, ROBOTRACONTEURLITE_SOCKET_FLAGS_ACTIVE);
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }
 

@@ -1,6 +1,8 @@
 #include "robotraconteurlite/util.h"
 #include "robotraconteurlite/array.h"
 
+#include <assert.h>
+
 #define FAILED ROBOTRACONTEURLITE_FAILED
 
 robotraconteurlite_status robotraconteurlite_util_match_string_in_list(
@@ -42,4 +44,32 @@ robotraconteurlite_status robotraconteurlite_util_match_string_in_list(
     }
 
     return 0U;
+}
+
+robotraconteurlite_status robotraconteurlite_util_numeric_convert_u16(robotraconteurlite_size_t val,
+                                                                      robotraconteurlite_u16* val_out)
+{
+    assert(val_out != NULL);
+    if (val > ROBOTRACONTEURLITE_UINT16_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
+    *val_out = (robotraconteurlite_u16)val;
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_util_numeric_convert_u32(robotraconteurlite_size_t val,
+                                                                      robotraconteurlite_u32* val_out)
+{
+    assert(val_out != NULL);
+    if (val > ROBOTRACONTEURLITE_UINT32_MAX)
+    {
+        return ROBOTRACONTEURLITE_ERROR_OUT_OF_RANGE;
+    }
+
+    *val_out = (robotraconteurlite_u32)val;
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }

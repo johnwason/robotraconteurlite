@@ -80,8 +80,9 @@ ROBOTRACONTEURLITE_API void robotraconteurlite_tcp_acceptor_construct(
     struct robotraconteurlite_connection_acceptor* acceptor,
     struct robotraconteurlite_connection_object* connections_head);
 
-ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_tcp_acceptor_listen(
-    struct robotraconteurlite_connection_acceptor* acceptor, const struct sockaddr_storage* serv_addr, int backlog);
+ROBOTRACONTEURLITE_API robotraconteurlite_status
+robotraconteurlite_tcp_acceptor_listen(struct robotraconteurlite_connection_acceptor* acceptor,
+                                       const struct sockaddr_storage* serv_addr, robotraconteurlite_size_t backlog);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status
 robotraconteurlite_tcp_acceptor_close(struct robotraconteurlite_connection_acceptor* acceptor);

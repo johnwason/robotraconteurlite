@@ -38,6 +38,12 @@ static robotraconteurlite_u16 robotraconteurlite_util_read_uint16(const void* p)
     return ret;
 }
 
+robotraconteurlite_status robotraconteurlite_util_numeric_convert_u16(robotraconteurlite_size_t val,
+                                                                      robotraconteurlite_u16* val_out);
+
+robotraconteurlite_status robotraconteurlite_util_numeric_convert_u32(robotraconteurlite_size_t val,
+                                                                      robotraconteurlite_u32* val_out);
+
 struct robotraconteurlite_const_string;
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_util_match_string_in_list(
@@ -47,6 +53,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_util_match_s
 #define ROBOTRACONTEURLITE_FLAGS_CHECK_ALL(flags, mask) (((flags) & (mask)) == (mask))
 #define ROBOTRACONTEURLITE_FLAGS_SET(flags, mask) ((flags) |= (mask))
 #define ROBOTRACONTEURLITE_FLAGS_CLEAR(flags, mask) ((flags) &= ~(mask))
+#define ROBOTRACONTEURLITE_FLAGS_CLEAR16(flags, mask) ((flags) &= ((robotraconteurlite_u16) ~(mask)))
 
 #if defined(__GNUC__) && !defined(ROBOTRACONTEURLITE_CODE_QUALITY_CHECK)
 #define ROBOTRACONTEURLITE_LIKELY(x) __builtin_expect(!!(x), 1)

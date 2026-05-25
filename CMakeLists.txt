@@ -7,7 +7,7 @@ project(robotraconteurlite VERSION 0.1.0)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_C_FLAGS
-        "${CMAKE_C_FLAGS} -ansi -pedantic -Werror -Werror=return-type -Wimplicit-function-declaration -Wint-conversion -Wincompatible-pointer-types -Wall -Wno-unused-function"
+        "${CMAKE_C_FLAGS} -ansi -pedantic -Werror -Werror=return-type -Wimplicit-function-declaration -Wint-conversion -Wincompatible-pointer-types -Wall -Wextra -Wconversion -Wfloat-conversion -Wno-unused-function"
     )
 endif()
 

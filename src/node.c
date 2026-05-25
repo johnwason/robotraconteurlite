@@ -2069,7 +2069,8 @@ robotraconteurlite_status robotraconteurlite_client_handshake(struct robotracont
         {
             client->client_connection->local_endpoint = (robotraconteurlite_u32)rand();
         }
-        client->client_connection->last_request_id = (robotraconteurlite_u32)(100 + (rand() % 100000));
+        client->client_connection->last_request_id =
+            (robotraconteurlite_u32)(100U + (((robotraconteurlite_u32)rand()) % 100000U));
         /* Spoof being connected to avoid error... */
         old_connection_state = client->client_connection->connection_state;
         FLAGS_CLEAR(client->client_connection->connection_state, ROBOTRACONTEURLITE_STATUS_FLAGS_CONNECTING);

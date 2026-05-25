@@ -196,6 +196,8 @@ void robotraconteurlite_connections_construct_from_array(
     assert(buffer_count >= (connections_fixed_storage_len * 2U));
     assert(buffer_size > 1024U);
 
+    ROBOTRACONTEURLITE_UNUSED(buffer_count);
+
     for (i = 0; i < connections_fixed_storage_len; i++)
     {
         robotraconteurlite_connection_construct(&connections_fixed_storage[i], connections_head);

@@ -53,7 +53,8 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_util_match_s
 #define ROBOTRACONTEURLITE_FLAGS_CHECK_ALL(flags, mask) (((flags) & (mask)) == (mask))
 #define ROBOTRACONTEURLITE_FLAGS_SET(flags, mask) ((flags) |= (mask))
 #define ROBOTRACONTEURLITE_FLAGS_CLEAR(flags, mask) ((flags) &= ~(mask))
-#define ROBOTRACONTEURLITE_FLAGS_CLEAR16(flags, mask) ((flags) &= ((robotraconteurlite_u16) ~(mask)))
+#define ROBOTRACONTEURLITE_FLAGS_CLEAR16(flags, mask)                                                                  \
+    ((flags) &= ((robotraconteurlite_u16) ~((robotraconteurlite_u16)(mask))))
 
 #if defined(__GNUC__) && !defined(ROBOTRACONTEURLITE_CODE_QUALITY_CHECK)
 #define ROBOTRACONTEURLITE_LIKELY(x) __builtin_expect(!!(x), 1)

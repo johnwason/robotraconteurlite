@@ -3376,6 +3376,8 @@ robotraconteurlite_status robotraconteurlite_messageentry_writer_end_entry(
     assert(header != NULL);
     assert(element_writer != NULL);
 
+    ROBOTRACONTEURLITE_UNUSED(header);
+
     entry_size = (robotraconteurlite_u32)(entry_writer->entry_header_size + element_writer->elements_written_size);
 
     switch (entry_writer->message_version)
@@ -3684,6 +3686,8 @@ robotraconteurlite_status robotraconteurlite_messageelement_writer_end_nested_el
     assert(element_writer != NULL);
     assert(header != NULL);
     assert(nested_element_writer != NULL);
+
+    ROBOTRACONTEURLITE_UNUSED(header);
 
     element_size = element_writer->element_header_size + nested_element_writer->elements_written_size;
     if (element_size > ROBOTRACONTEURLITE_UINT32_MAX)

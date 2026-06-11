@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include "robotraconteurlite/array.h"
 #include <errno.h>
+#include <stdio.h>
 
 robotraconteurlite_u32 robotraconteurlite_nodeid_equal(const struct robotraconteurlite_nodeid* a,
                                                        const struct robotraconteurlite_nodeid* b)
@@ -100,6 +101,30 @@ robotraconteurlite_status robotraconteurlite_nodeid_parse(const struct robotraco
         }
         dst->data[i] = (robotraconteurlite_u8)val;
     }
+
+    return ROBOTRACONTEURLITE_ERROR_SUCCESS;
+}
+
+robotraconteurlite_status robotraconteurlite_nodeid_to_str(
+    struct robotraconteurlite_nodeid* src, struct robotraconteurlite_string* dst_str)
+{
+
+    char tmp_buf[37];
+    memset(tmp_buf, 0, sizeof(tmp_buf));
+
+    if (dst_str->len != 36)
+    {
+        return ROBOTRACONTEURLITE_ERROR_INVALID_ARGUMENT;
+    }
+
+    sprintf(tmp_buf, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        src->data[0],  src->data[1],  src->data[2],  src->data[3],
+        src->data[4],  src->data[5],  src->data[6],  src->data[7],
+        src->data[8],  src->data[9],  src->data[10], src->data[11],
+        src->data[12], src->data[13], src->data[14], src->data[15]
+    );
+
+    memcpy(dst_str->data, tmp_buf, 36);
 
     return ROBOTRACONTEURLITE_ERROR_SUCCESS;
 }

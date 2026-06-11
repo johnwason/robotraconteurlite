@@ -21,6 +21,7 @@
 #include "robotraconteurlite/util.h"
 
 struct robotraconteurlite_const_string;
+struct robotraconteurlite_string;
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,9 @@ robotraconteurlite_nodeid_copy_to(const struct robotraconteurlite_nodeid* src, s
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_nodeid_parse(
     const struct robotraconteurlite_const_string* src_str, struct robotraconteurlite_nodeid* dst);
+
+ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_nodeid_to_str(
+    struct robotraconteurlite_nodeid* src, struct robotraconteurlite_string* dst_str);
 
 #ifdef __cplusplus
 }

@@ -52,7 +52,7 @@ ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_nodeid_parse
     const struct robotraconteurlite_const_string* src_str, struct robotraconteurlite_nodeid* dst);
 
 ROBOTRACONTEURLITE_API robotraconteurlite_status robotraconteurlite_nodeid_to_str(
-    struct robotraconteurlite_nodeid* src, struct robotraconteurlite_string* dst_str);
+    const struct robotraconteurlite_nodeid* src, struct robotraconteurlite_string* dst_str);
 
 #ifdef __cplusplus
 }
